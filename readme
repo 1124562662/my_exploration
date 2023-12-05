@@ -1,0 +1,177 @@
+
+  1. exploration policies are separated from the target policy,
+     i.e., separate agents, q functions, trajectories,etc.
+
+  2. use phi(s,a) to represent the uncertainty of the (s,a) pair during the action selection(similar to UCB),
+     and use phi(s') to learn the intrinsic Q value.
+     use off-policy intrinsic Q-function to guide the exploration instead.(use stochastic policy instead of Max() over Q functions)
+     use fourier representation to represent the action a.
+
+     what should the intrinsic experience replay buffer be like under this circumstance?
+
+  3. frontier buffer(similar to Go-Explore) to replace the experience replay buffer of the intrinsic Q agent.
+     option 1:  maintain a density model(or a un-normalised one) to constantly judge the novelty of the experiences.
+                store the embedding, not the whole picture.
+
+  4. phi(s) = sum_i[rnd(s,a_i)] to determine the entropy level of the state.
+     This helps allviate the 'derailment' problem stated in Go-explore.
+
+  5. What about the continuous case? How to adapt UCB to DDPG?
+
+  6. Interplay of intrinsic and extrinsic trajectories --  mix the two accordingly.
+
+  7. empowerment -- one type of states are different from others, some states might lead to many other different states, like the cross-road,
+  others will lead to the same state, like a dead end. Add more noise on the first type, and follow the existing policy on the second.
+  Not all states are created equal.
+
+  What is the source of exploration?
+  Random novel behaviour! exploration policy is only used to guide the agent towards a
+  'interesting/empowered' state, such that the agent can explore randomly.
+
+  To determine if a state can be a 'start' that worth store -- if it can DIRECTLY lead to novel states.
+
+  8. Intrinsic Q is problematic, it should represent the intrinsic returns of the future, but it is actually the intrinsic returns of the past.
+  So the policy is constantly chasing the tail.
+  这一切都依赖于一个假设 -- novel states are continuously connected
+
+
+  9. Why naive RND is overly risk-averse?
+     dead -> restart, the Q function never has the chance to see new state/high intrinsic Q!
+     更愿意积累小E值而不死，而不是为了一次的大E值去死
+
+
+  10. feel like I am deviating from my initial goal -- world model that transfer knowledge from task to task within the same world.
+
+  11. New experiment setting -- stochastic MonteZuma 1) observational randomness 2) dynamical randomness
+
+  12. If the RND intrinsic reward decreases too fast, the PPO agent will forget about the Q value, so the RND intrinsic reward needs to decrease slowly in
+      the on-policy setting. (mitigated by the emu of target Q net).
+
+  13. Intrinsic Value(s) function should use Sum(), but not use Max() in the Bellman update?
+  Value(s) = Sum_{a,r,s'}Q(s,a) = Sum_{a,r,s'}[intrinsic R + Value(s')]
+
+  consider a maze:
+                        |-------------------------|
+                        |          B              |
+  ----------------------|                         |
+              A             |---------------------|
+  ----------------------|                         |
+                        |          C              |
+                        |-------------------------|
+  value(a) = value(b) + value(c), but not value(a) = MAX[value(b),value(c)]
+  A way of expressing state empowerment.
+
+  14. The design of the frontier faces new problem:
+  If two states are equally novel but very similar (different only in trivial aspects), how to differentiate?
+  综合考虑 state的E值和这个state与buffer里其他state的相似性。
+
+  15. NEVER-GIVE-UP 感觉有点问题，不鼓励重复访问一个状态的机制，应该在action selection的阶段完成。而且这是Non-Markovian的。
+
+  16. Depth-first 相比于 breadth-first可以减小buffer size，如何把这个加入到Deep RL中？
+
+  17. RND 需要 Non-episodic，如何回归episodic的设定？
+  类比于NGU，对于轨迹{s0,...,sT}里的每个i,计算{s0,...,si}的重复度，作为惩罚项。
+  这样，短episode里死亡了，也和长但是重复来回移动的episode总体 rewards 差不多。
+  和NGU不同的是，这个reward并不是Markovian的，所以不能和其他intrinsic reward相加，
+  需要:
+  (a)单独使用一个transformer/rnn来处理这个，并且把这个transformer/rnn 放在 exploration policy的action selection过程中。
+  把这个作为一个回归问题，具体的，对于{s0,a0,s1}来说，对于s1的每种可能的a1，预测一个惩罚项。
+
+  (b)或者其实不用这么复杂，如果有一个transition dynamics model P，直接让P对每个action 估计一个S_{t+1},然后直接计算similarity.
+    为什么已有RND了还需要BYOL？可以这样解释 -- BYOL对随机噪声更鲁棒。
+
+  18. E function能不能从后往前一步一步更新，来适应快速变化的E值。(思考)
+      “If the reward bonuses change too quickly, or are too noisy,
+      then it becomes possible for the function approximator to prematurely stop propagation of older changes and start trying to match the newer changes,
+      resulting in missed exploration opportunies or even converging to a suboptimal mixture of old and new uncertainties.“
+
+  19. 在empowerment大的地方多探索，小的地方少探索。 比如对RND采取不同的learning rate或者不同的sample概率。
+      在这里思考下怎么量化empowerment。也许additive Bellman update就是好主意。
+
+  20.如果有dynamics model T(), 那就可以把UCB改成 phi[T(s,a)], 这里phi()是RND model
+
+  21.尝试使用 transformed Retrace loss functions 来解决Q函数回传太慢的问题
+
+  22. 因为E net需要不停不断的变化，给这个网络加上一个gradient mask，防止其学习能力下降。
+
+  23. 一方面，rnd不能下降太快，不然agent还学不到现在的Q值；
+  另一方面，rnd如果在已经搜索完毕的地方下降太慢，又会让agent在已经搜索完毕的地方反复探索,会让agent exploit 这个小bug. （UCB也可以部分解决这个问题）
+
+  24. 既然可以用rnd设计UCB，为什么不用此设计Thompson sampling等更多multi-arm bandit问题呢？
+
+  25. 这里，因为intrinsic Q 的transiency， 应该考虑类似于contextual multi-arm bandits
+
+  26. state 的表示学习还得是基于reachability，类似于masked language model
+
+  27. novelD提供了一个寻找frontier/boundary的条件.
+      novelD其实很有作用，如果E值下降太慢，agent 会在无聊的区域来回反复，当E值下降之后，agent还是会继续做这种事儿，而不是去开发新地带
+      有了novelD，agent只会在边界。
+      只有在连续区域类探索时候比较有用
+
+  28. extrinsic reward 有指导作用的时候，可以给i-agent作为信号
+
+  29. RND里，因为RND一直在变化，如果一个区域许久未被探索了，那这个区域的RND值有再次微微上升的可能性。
+      UCB net里不同actions之间也是同理
+
+  30. 借鉴 Stationary Objectives For Exploration(SOFE)， 把现在的UCB改成contextual bandits（机理是什么？有用吗？）
+
+  31. RND target 可否变化？用 BYOL encoder
+
+  32. 痛点有哪些？ reward is transient/ two-level exploration: intrinsic Q and randomness/ reward's changing speed/ #TODO 待补充
+
+  33. novelD 只在有reward 的地方更新 RND！
+      这样才能逐步推进frontier，原来的RND更新方法会让frontier的更新不连续。
+      根据 novelD rewards大小作为 RND sample training batch 的概率。
+
+
+  34. 把不同方法的learning dynamics搞清楚一点
+
+  35. RND最大的问题还是不能用好的encoder，因为target要全局保持不变
+      一种做法是，先用一个RND初筛，过了筛选之后，用一个含有BYOL的RND给出真正的intrinsic rewards
+
+  36. RND-based UBC的还有个好处是可以减小训练时对envs的需求量？也许可以用这个吹嘘一下
+
+  37. agent来回蠕动的原因有二。
+      第一，反复收集小的intrinsic reward。
+      第二，agent探索到了不同frontier，每个frontier的intrinsic回报差不多时候，导致agent纠结，一会儿想去a区域，一会儿想去b区域。
+      agent 策略函数不是下定决心要去a，或者要去b。
+      goal conditioned agent就没有这个问题，这是derailment的另一面。
+
+  38. 如果把 RND target 的embedding告诉agent，而不是当做秘密，又会如何呢？（non-stationary）
+
+  40. 可能还是要把agent 改成 off-policy with GAE，然后用buffer记录frontier
+      这里buffer的更新规则就很有趣了，要考虑实时的novelD值高于某个阈值，还要保证buffer内frontier states的多样性。
+
+  41. 做一个小trick，就是把reward改成负值。
+
+  42. 为什么agent不断自杀？我猜想也许是为了让上方显示生命的格子发生变化。
+
+  43. RND里面到底要不要normalization?
+      obs,rewards,到底怎么归一化?
+      如果盲目归一化obs，遇到新states会改变mean和var，导致已经探索的states又变的有趣起来。
+      rewards的归一化呢？如果新states让mean上升,似乎没啥。已探索区域的states的rewards也会变小。
+      需不需要novelty detection在这个里面？
+
+  44.novelD还可以进一步，做一个differential kernel，后三步减去前三步。不过意义不一定大。
+
+  45. RND类的方法受到物体大小的影响，大的物体变化收到的reward更多，小的物体收到的reward更小。
+
+  46. 一定要强调，exploration来自两方面，
+      i rewards和entropy-enforced or theta-greedy-enforced randomness/NN initialization randomness/policy churn，
+      但是后者才是真正有新发现的，前者只是找到旧的发现，并寄希望于旧发现和新发现相邻。
+      UBC network 属于后者而不像之前的工作属于前者。
+      注意这里讲故事的措辞。
+
+  47. 感觉所有intrinsic reward的问题，都是持续学习带来的
+
+
+
+
+
+
+
+
+
+
+
+

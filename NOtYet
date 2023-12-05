@@ -1,0 +1,66 @@
+
+#
+# class WithinESimilarity(nn.Module):
+#     # this part can be problematic,
+#     # like discourage some necessary repetitive trajectories,
+#     # like going right to get a key and then going left to proceed the game.
+#     def __init__(self):
+#         super(WithinESimilarity, self).__init__()
+#         self.transformer = torch.nn.Transformer(d_model=512, nhead=2, num_encoder_layers=1, )
+#         pass
+#
+#
+# class BYOLprediction(nn.Module):
+#
+#     # https://github.com/lucidrains/byol-pytorch
+#     def __init__(self):
+#         super(BYOLprediction, self).__init__()
+#
+#
+# class BYOL_WithinESimilarity(WithinESimilarity):
+#     def __init__(self):
+#         super(BYOL_WithinESimilarity, self).__init__()
+
+
+# class GRU_WithinESimilarity(WithinESimilarity):
+#     class ActionDecoder(nn.Module):
+#         def __init__(self, env):
+#             super().__init__()
+#             in_dim = np.array(env.single_observation_space.shape).prod()
+#             self.action_num = env.single_action_space.n
+#             self.f1 = tensorLinear(self.action_num, 200, in_dim),
+#             self.f2 = tensorLinear(self.action_num, 1, 200),
+#
+#         def forward(self, obs):
+#             # assume obs is (envs_num,obs_dim)
+#             obs = obs.t()  # (obs_dim, envs_num)
+#             f1_ = self.f1(obs) + obs
+#             f1_ = F.leaky_relu(f1_)
+#             f2_ = self.f2(f1_) + f1_
+#             f2_ = F.leaky_relu(f2_)  # (self.action_num,1, envs_num)
+#             s = f2_.size()
+#             f2_ = f2_.reshape(s[0], -1).t()  # (envs_num, self.action_num)
+#             return f2_
+#
+#         def particular_action_forward(self, obv, action_index):
+#             obs = obv.t()
+#             f1_ = self.f1.particular_action_forward(obs, action_index) + obs
+#             f1_ = F.leaky_relu(f1_)
+#             f2_ = self.f2.particular_action_forward(f1_, action_index) + f1_
+#             f2_ = F.leaky_relu(f2_)
+#             s = f2_.size()
+#             f2_ = f2_.reshape(s[0], -1).t()
+#             return f2_
+#
+#     def __init__(self, in_size: int, hidden_size: int, env, ):
+#         super(GRU_WithinESimilarity, self).__init__()
+#         self.gru = torch.nn.GRU(input_size=in_size, hidden_size=hidden_size, num_layers=1)
+#         self.action_decoder = self.ActionDecoder(env)
+#
+#     def forward(self, x):
+#         x = self.gru(x)
+#         actions = self.action_decoder(x)
+#         return actions  # shape(action_num, )
+#
+#     def train(self, ):
+#         pass

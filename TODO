@@ -1,0 +1,13 @@
+1. 各种 rewards的normalization
+2. input normalization？
+3. 显存的优化
+4. extrinsic agent的 优化
+5. extrinsic rewards 有指导作用的时候，可以给i-agent作为信号
+6. ACNetwork 加入 BYOL encoder emb
+7. 并行化一些步骤
+8. NGU 不同环境不是同步dones，re_initialize_history
+9. 把BYOL里的concatenate去掉, (用einsum把BYOL里的简化??)
+11.对于CPU cores 少的情况进行适配 （steps 长一点就行？)
+12. 全部改用 off - policy的IMPLAYA (off policy GAE)
+   off - policy的buffer可以起到frontier的作用，避免derailment
+   架构也可以改成 R2D2
