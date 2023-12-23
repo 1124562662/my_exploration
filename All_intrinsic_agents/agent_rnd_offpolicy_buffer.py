@@ -43,7 +43,7 @@ class IntrinsicAgent(nn.Module):
 
         byol_encoder = BYOLEncoder(in_channels=1, out_size=600, emb_dim=ac_emb_dim).to(device)  # output size 192
         self.policy_net = ACNetwork(device, action_space=envs.action_space.n, byol_encoder=byol_encoder,
-                                    indim=ac_emb_dim).to(device)
+                                    indim=ac_emb_dim).to(device) #TODO 加一个 extrinsic reward 的 head？
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
         self.action_space = envs.action_space.n
 
@@ -68,9 +68,9 @@ class IntrinsicAgent(nn.Module):
                          obs_  # (batch size,  dim x, dim y)
                          , action_given  # (batch size, )
                          , ):
-        # TODO 加入batch size 维度
+        assert len(obs_.shape) == 3 and len(action_given.shape) == 1
         obs_ = obs_.to(self.device).to(torch.float32)
-        policy, critic = self.policy_net(obs_)  # (batch size, action_nums),  (batch size, )
+        policy, critic = self.policy_net(obs_.unsqueeze(1))  # (batch size, action_nums),  (batch size, )
         assert policy.size(-1) == self.actions_num, "Categorical "
         probs = Categorical(logits=policy)
         return probs.log_prob(action_given), \
@@ -84,6 +84,7 @@ class IntrinsicAgent(nn.Module):
         # TODO
         self.use_only_UBC_exploration_threshold = 0.7
 
+        assert len(obs_.shape) == 3,"get_action"
         obs_ = obs_.to(self.device).to(torch.float32)
         # pseudo count of UBC
         ubc_values = self.pseudo_ucb_nets(obs_)  # (env,action_nums)
@@ -92,7 +93,7 @@ class IntrinsicAgent(nn.Module):
         ubc_values_ = torch.sqrt(ubc_values)  # sqrt() similar to UCB
         intrinsic_reward_ = ubc_values_.mean(dim=-1)  # (env,)
         msk = intrinsic_reward_ > self.use_only_UBC_exploration_threshold  # (envs,) the envs that only use Ucb as the policy
-        policy_og, critic = self.policy_net(obs_)  # (env,action_nums),  (env,)
+        policy_og, critic = self.policy_net(obs_.unsqueeze(1))  # (env,action_nums),  (env,)
 
         tau_add_one = intrinsic_reward_.clone()  # (env,)
         tau_add_one[tau_add_one < self.clip_intrinsic_reward_min] = 0  # (env,)
@@ -140,8 +141,6 @@ class IntrinsicAgent(nn.Module):
         int_returns = int_advantages + int_values
         return int_returns, int_advantages
 
-
-
     def rollout_step(self, args, device, dim_x, dim_y, envs,
                      ep_info_buffer, ep_success_buffer, rb,
                      global_step: int,
@@ -162,9 +161,15 @@ class IntrinsicAgent(nn.Module):
             # self.obs_stats.count = 80
             self.ubc_statistics.count = args.num_steps
             print("End to initialize...")
-        elif global_step/self.train_with_buffer_interval == 0:
-            rnd_buffer.train_policy(epoch=args.rnd_buffer_train_off_policy_epoches,rnd_module=self.pseudo_ucb_nets,policy_net=self.policy_net,
-                                    policy_net_optimizer=self.optimizer,sample_from_buffer=True)
+
+        elif global_step / self.train_with_buffer_interval == 0:
+            for _ in range(args.rnd_buffer_train_off_policy_times):
+                rnd_buffer.train_policy(epoch=args.rnd_buffer_train_off_policy_epoches,
+                                        rnd_module=self.pseudo_ucb_nets,
+                                        policy_net=self.policy_net,
+                                        policy_net_optimizer=self.optimizer,
+                                        sample_from_buffer=True)
+
 
         obs = torch.zeros((args.num_steps, args.num_envs) + (dim_x, dim_y)).to(device)  # (steps, env nums, dimx,dimy)
         actions = torch.zeros((args.num_steps, args.num_envs), dtype=torch.long).to(device)
@@ -223,9 +228,9 @@ class IntrinsicAgent(nn.Module):
         # bootstrap value if not done
         curiosity_rewards[-1, :] = curiosity_rewards[-2, :]  # The last reward
 
-
         # Add the result to the rnd buffer
-        rnd_buffer.add(obs,rnd_rewards,self.clip_intrinsic_reward_min,actions,dones,logprobs,self.pseudo_ucb_nets,self.policy_net,self.optimizer)
+        rnd_buffer.add(obs, rnd_rewards, self.clip_intrinsic_reward_min, actions, dones, logprobs, self.pseudo_ucb_nets,
+                       self.policy_net, self.optimizer)
 
         # TODO -- 注意！ 这里和 RND 一样没有考虑 dones，没有 episode
         int_returns, int_advantages = self.calculate_off_policy_gae(next_obs, curiosity_rewards, args, device,

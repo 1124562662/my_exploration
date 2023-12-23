@@ -164,6 +164,9 @@ def parse_args():
                         help=" ")
     parser.add_argument("--train_with_buffer_interval", type=int, default=100,
                         help=" ")
+
+    parser.add_argument("--rnd_buffer_train_off_policy_times", type=int, default=5,
+                        help=" ")
     parser.add_argument("--rnd_buffer_train_off_policy_epoches", type=int, default=5,
                         help=" ")
     args = parser.parse_args()

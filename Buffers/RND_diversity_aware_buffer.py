@@ -157,9 +157,12 @@ class RNDReplayBuffer:
             mem_available /= 1024 ** 3
             print(f"total_memory_usage is {total_memory_usage:.2f}GB, while mem_available is {mem_available:.2f}GB")
 
-    # @torch.no_grad()
-    # def update_encoder_target(self):
-    #     self.b_encoder.encoder_ema.update_moving_average()
+    @torch.no_grad()
+    def update_encoder_target(self):
+        self.b_encoder.encoder_ema.update_moving_average()
+
+    def train_encoder_with_buffer(self):
+        pass #TODO
 
     def train_encoder(self,
                       states: torch.Tensor,  # (B, rollout, dim x, dim y)
