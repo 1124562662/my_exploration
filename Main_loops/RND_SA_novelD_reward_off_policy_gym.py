@@ -15,7 +15,7 @@ from exploration_on_policy.Buffers.RND_diversity_aware_buffer import RNDReplayBu
 from exploration_on_policy.Buffers.ReplayBuffer_eopg import ReplayBuffer
 
 from exploration_on_policy.Extrinsic_agent import ExtrinsicQAgent
-from exploration_on_policy.All_intrinsic_agents.agent_rnd_Qsa_action_selection_novelD_reward import IntrinsicAgent
+from exploration_on_policy.All_intrinsic_agents.agent_rnd_offpolicy_buffer import IntrinsicAgent
 from exploration_on_policy.utils.Initial_stats_rollout import collect_inital_stats
 from exploration_on_policy.utils.normalizer import TorchRunningMeanStd
 from exploration_on_policy.utils.utils import obvs_preprocess
@@ -316,6 +316,7 @@ poetry run pip install "stable_baselines3==2.0.0a1" "gymnasium[atari,accept-rom-
             e_agent.rollout_step(args, device, dim_x, dim_y, envs, ep_info_buffer, ep_success_buffer, rb, global_step,
                                  next_obs)
         else:
+
             current_agent = i_agent
             mean_i_rewards, max_i_rewards, next_obs = i_agent.rollout_step(args, device, dim_x, dim_y, envs,
                                                                            ep_info_buffer,

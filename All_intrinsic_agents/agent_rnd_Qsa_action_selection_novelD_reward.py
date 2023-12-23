@@ -166,7 +166,6 @@ class IntrinsicAgent(nn.Module):
             extrinsic_rewards[step] = torch.from_numpy(rewards).to(device)
 
             update_info_buffer(ep_info_buffer, ep_success_buffer, infos, next_done)
-            # real_next_obs = real_next_obs.clone() TODO -- what is this?
             rb.add(next_obs.cpu().detach().numpy(), real_next_obs.cpu().detach().numpy(), actions_arg.cpu().numpy(),
                    rewards, next_done, infos)
             next_obs = real_next_obs
@@ -232,6 +231,7 @@ class IntrinsicAgent(nn.Module):
             np.random.shuffle(b_inds)
             for start in range(0, args.batch_size, args.minibatch_size):
                 end = start + args.minibatch_size
+                end = end if end < args.batch_size else args.batch_size
                 mb_inds = torch.from_numpy(b_inds[start:end]).to(device)
                 self.pseudo_ucb_nets.train_RNDs(args, mb_inds.long(), b_obs, b_actions.long(),
                                                 train_net_num=args.train_net_num)
@@ -243,6 +243,7 @@ class IntrinsicAgent(nn.Module):
             np.random.shuffle(b_inds)
             for start in range(0, args.batch_size, args.minibatch_size):
                 end = start + args.minibatch_size
+                end = end if end < args.batch_size else args.batch_size
                 mb_inds = b_inds[start:end]
 
                 _, newlogprob, entropy, _, new_int_values, ubc_values = self.get_action(
@@ -250,6 +251,7 @@ class IntrinsicAgent(nn.Module):
                     intrinsic_reward=b_rnd_rewards[mb_inds],
                 )
                 logratio = newlogprob - b_logprobs[mb_inds]
+                logratio = torch.clip(logratio, min=-10,max=10)
                 ratio = logratio.exp()
 
                 with torch.no_grad():

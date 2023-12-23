@@ -345,7 +345,7 @@ class RNDReplayBuffer:
     def train_policy(self,
                      epoch: int,
                      rnd_module: UcbNets,
-                     policy_net: nn.Module,
+                     policy_net: ACNetwork,
                      policy_net_optimizer,
                      sample_from_buffer: bool = True,
                      batch_size: int = None,
