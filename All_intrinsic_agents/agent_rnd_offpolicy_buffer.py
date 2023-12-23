@@ -10,7 +10,7 @@ from torch.distributions.categorical import Categorical
 import numpy as np
 from ..Networks.ACNetwork import ACNetwork
 from ..Networks.UcbCountMultipleNets import UcbNets
-from ..BYOL import BYOLEncoder
+from exploration_on_policy.Networks.ByolEncoder import BYOLEncoder
 from ..utils.Multi_dim_gumbel_softmax import multi_dim_softmax
 from ..utils.utils import obvs_preprocess, update_info_buffer
 from ..utils.normalizer import TorchRunningMeanStd
@@ -39,9 +39,8 @@ class IntrinsicAgent(nn.Module):
         self.device = device
         self.clip_intrinsic_reward_min = args.clip_intrinsic_reward_min
 
-        byol_encoder = BYOLEncoder(in_channels=1, out_size=192, emb_dim=ac_emb_dim).to(device)  # output size 600
-        ac_network = ACNetwork(device, envs, indim=ac_emb_dim).to(device)
-        self.policy_net = nn.Sequential(byol_encoder, ac_network).to(device)
+        byol_encoder = BYOLEncoder(in_channels=1, out_size=600 , emb_dim=ac_emb_dim).to(device)  # output size 192
+        self.policy_net = ACNetwork(device, action_space=envs.action_space.n,byol_encoder=byol_encoder, indim=ac_emb_dim).to(device)
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
         self.action_space = envs.action_space.n
 
@@ -61,6 +60,8 @@ class IntrinsicAgent(nn.Module):
 
         self.use_only_UBC_exploration_threshold = use_only_UBC_exploration_threshold
 
+
+
     def get_action_train(self,
                          obs_  # (batch size,  dim x, dim y)
                          , action_given  # (batch size, )
@@ -68,6 +69,7 @@ class IntrinsicAgent(nn.Module):
         # TODO 加入batch size 维度
         obs_ = obs_.to(self.device).to(torch.float32)
         policy, critic = self.policy_net(obs_)  # (batch size, action_nums),  (batch size, )
+        assert policy.size(-1) == self.actions_num, "Categorical "
         probs = Categorical(logits=policy)
         return probs.log_prob(action_given), \
                probs.entropy(), \
@@ -96,8 +98,10 @@ class IntrinsicAgent(nn.Module):
         policy = multi_dim_softmax(logits=policy_og, tau_add_one=tau_add_one)  # (env,action_nums)
         policy = policy + self.pseudo_ucb_coef * ubc_values_  # (env,action_nums) # TODO set self.pseudo_ucb_coef here
         policy[msk] = ubc_values_[msk]  # the envs that only use Ucb as the policy
+        assert policy.size(-1) == self.action_space, "Categorical "
         probs = Categorical(probs=policy)  # Attention！it is probs here，not logits！ no softmax here！
         actions_arg = probs.sample()  # (env, ),  instead of torch.argmax(policy, dim=1)
+        assert policy_og.size(-1) == self.action_space, "Categorical "
         return actions_arg, \
                probs.log_prob(actions_arg), \
                probs.entropy(), \

@@ -42,8 +42,9 @@ class BYOLEncoder(nn.Module):
         self.out = nn.Linear(out_size, emb_dim)
 
     def forward(self, x):
-        if self.in_channels == 1 and len(x.size()) == 3:
-            x = x.unsqueeze(1)
+        assert x.shape[1] == 1 and len(x.shape) == 4, "BYOL Encoder"
+        # if self.in_channels == 1 and len(x.size()) == 3:
+        #     x = x.unsqueeze(1)
         x = self.resnet_units(x)
         x = x.flatten(start_dim=1)
         print("resnet forward", x.size())

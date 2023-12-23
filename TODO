@@ -11,3 +11,5 @@
 12. 全部改用 off - policy的IMPLAYA (off policy GAE)
    off - policy的buffer可以起到frontier的作用，避免derailment
    架构也可以改成 R2D2
+13. 好像加入了UBC value之后，还是要加重要性采样，因为学习的policy和本来的policy不一样
+    UBC是在变化的！直接传入来学习，似乎有点问题！

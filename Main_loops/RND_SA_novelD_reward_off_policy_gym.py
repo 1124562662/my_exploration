@@ -10,6 +10,8 @@ from torch.utils.tensorboard import SummaryWriter
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import sys
 import numpy as np
+
+from exploration_on_policy.Buffers.RND_diversity_aware_buffer import RNDReplayBuffer
 from exploration_on_policy.Buffers.ReplayBuffer_eopg import ReplayBuffer
 
 from exploration_on_policy.Extrinsic_agent import ExtrinsicQAgent
@@ -135,7 +137,8 @@ def parse_args():
                         help=" ")
     parser.add_argument("--train_net_num", type=int, default=1,
                         help="")
-
+    parser.add_argument("--use_e_agent", type=bool, default=False,
+                        help=" ")
     parser.add_argument("--rnd_train_num", type=int, default=40,
                         help=" ")
     parser.add_argument("--rnd_update_epochs", type=int, default=1,
@@ -146,6 +149,19 @@ def parse_args():
                         help=" ")
     parser.add_argument("--use-contextual-bandit-UBC", type=bool, default=False,
                         help=" ")  # TODO
+    # buffer related
+    parser.add_argument("--rnd_buffer_size", type=int, default=1000,
+                        help=" ")
+    parser.add_argument("--ema_beta", type=float, default=0.3,
+                        help=" ")
+    parser.add_argument("--initial_traj_len_times", type=int, default=3,
+                        help=" ")
+    parser.add_argument("--buffer_encoder_emb_dim", type=int, default=100,
+                        help=" ")
+    parser.add_argument("--encoder_learning_rate", type=float, default=0.001,
+                        help=" ")
+    parser.add_argument("--initial_encoder_train_epoches", type=int, default=400,
+                        help=" ")
 
     args = parser.parse_args()
     args.batch_size = int(args.num_envs * args.num_steps)
@@ -232,6 +248,19 @@ poetry run pip install "stable_baselines3==2.0.0a1" "gymnasium[atari,accept-rom-
 
     dim_x = 70
     dim_y = 53
+    rnd_buffer = RNDReplayBuffer(args,
+                                 args.rnd_buffer_size,
+                                 envs.action_space.n,
+                                 args.ema_beta,
+                                 dim_x, dim_y,
+                                 args.num_envs,
+                                 args.initial_traj_len_times,
+                                 args.num_steps,
+                                 args.buffer_encoder_emb_dim,
+                                 args.encoder_learning_rate,
+                                 store_device="cpu", cuda_device="cuda:0",
+                                 initial_encoder_train_epoches=args.initial_encoder_train_epoches)
+
     i_agent = IntrinsicAgent(envs=envs,
                              args=args,
                              device=device,
@@ -246,33 +275,33 @@ poetry run pip install "stable_baselines3==2.0.0a1" "gymnasium[atari,accept-rom-
                              hidden_units=512,
                              )
 
-    e_agent = ExtrinsicQAgent(envs,
-                              device,
-                              args.extrinsic_update_target_tau,
-                              learning_rate=args.e_learning_rate,
-                              E_action_gumbel_max_tau=args.E_action_gumbel_max_tau)
+    if args.use_e_agent:
+        e_agent = ExtrinsicQAgent(envs,
+                                  device,
+                                  args.extrinsic_update_target_tau,
+                                  learning_rate=args.e_learning_rate,
+                                  E_action_gumbel_max_tau=args.E_action_gumbel_max_tau)
 
-    rb = ReplayBuffer(
-        args.buffer_size,
-        envs.observation_space,
-        envs.action_space,
-        device,
-        dim_x=dim_x,
-        dim_y=dim_y,
-        optimize_memory_usage=True,
-        handle_timeout_termination=False,
-        n_envs=args.num_envs,
-    )
+        rb = ReplayBuffer(
+            args.buffer_size,
+            envs.observation_space,
+            envs.action_space,
+            device,
+            dim_x=dim_x,
+            dim_y=dim_y,
+            optimize_memory_usage=True,
+            handle_timeout_termination=False,
+            n_envs=args.num_envs,
+        )
 
     from collections import deque
 
     ep_info_buffer = deque(maxlen=args.num_steps)
     ep_success_buffer = deque(maxlen=args.num_steps)
 
-
     start_time = time.time()
     next_obs = envs.reset()
-    next_obs = obvs_preprocess(next_obs,device=device) #,obs_stats= self.obs_stats)
+    next_obs = obvs_preprocess(next_obs, device=device)  # ,obs_stats= self.obs_stats)
 
     # TRY NOT TO MODIFY: start the game
     # obs, _ = envs.reset(seed=args.seed)
@@ -282,13 +311,15 @@ poetry run pip install "stable_baselines3==2.0.0a1" "gymnasium[atari,accept-rom-
     for global_step in range(args.total_timesteps):
         epsilon = linear_schedule(args.start_e, args.end_e, args.exploration_fraction * args.total_timesteps,
                                   global_step)
-        if (global_step % 100) / 100 > epsilon:
+        if args.use_e_agent and (global_step % 100) / 100 > epsilon:
             current_agent = e_agent
-            e_agent.rollout_step(args, device, dim_x, dim_y, envs, ep_info_buffer, ep_success_buffer, rb, global_step,next_obs)
+            e_agent.rollout_step(args, device, dim_x, dim_y, envs, ep_info_buffer, ep_success_buffer, rb, global_step,
+                                 next_obs)
         else:
             current_agent = i_agent
-            mean_i_rewards, max_i_rewards, next_obs = i_agent.rollout_step(args, device, dim_x, dim_y, envs, ep_info_buffer,
-                                                                 ep_success_buffer, rb, global_step,next_obs)
+            mean_i_rewards, max_i_rewards, next_obs = i_agent.rollout_step(args, device, dim_x, dim_y, envs,
+                                                                           ep_info_buffer,
+                                                                           ep_success_buffer, rb, global_step, next_obs)
             global_i_step += 1
             if global_step % args.log_interval == 0:
                 print("global_step", global_step, ",   total_env_step_call", total_env_step_call, ",   I_rew",

@@ -1,1 +1,41 @@
 
+1.encoder选择：
+BYOL encoder，没有encoder，MLM encoder，reachability-aware encoder， 对比学习encoder
+encoder最好能体现states之间的距离
+
+2.diversity metric选择：
+如果有encoder，那一定要用encoder后的embedding
+kernel-based metric
+基于对比学习，state-connectivity 来设计metric
+
+3.函数有
+Add(transition)
+    加入，同时计算frontier和novelty
+    调用_compact_trajectory()来去掉来来回回无用的states
+
+_compact_trajectory()
+    对于一条trajectory，去掉在frontier之前来来回回无用的states
+
+compact()
+    根据diversity metric来删除重复的transitions
+    快满时调用
+
+train(policy)
+    off-policy training of the policy
+
+
+
+4.考虑failure case，什么情况下会失败？
+一个promising frontier什么时候会被删除？
+什么时候会保留不再是frontier但只是和别人不同的stale states？
+
+5.如果novelty 是RND，似乎novelty下降了不太可能上升
+  但如果是BYOL，就有可能
+
+6. novelty = certain state's maximum i reward * diversity, maximum i reward必须大于某一个阈值
+
+7. 不同trajectories之间的相似性，同一trajectory之间不同states的相似性，要考虑，删掉多余而相似的states、trajectories。
+
+8. 对比学习的时候也要考虑负样本的选择，负样本之间也不同，有的负样本近，有的远
+
+

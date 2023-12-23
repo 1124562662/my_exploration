@@ -30,7 +30,6 @@ class IntrinsicAgent(nn.Module):
                  # RND networks parameters
                  ae_sin_size: int = 128,
                  filter_size: int = 3,
-                 net_num: int = 4,
                  hidden_units: int = 512,
                  ac_emb_dim=300,
                  ):
@@ -38,9 +37,10 @@ class IntrinsicAgent(nn.Module):
         self.envs = envs
         self.device = device
         self.clip_intrinsic_reward_min = args.clip_intrinsic_reward_min
-
-        self.ac_network = ACNetwork(device, envs, indim=ac_emb_dim).to(device)
-        self.optimizer = optim.Adam(self.ac_network.parameters(), lr=learning_rate)
+        byol_encoder = BYOLEncoder(in_channels=1, out_size=192, emb_dim=ac_emb_dim).to(device)  # output size 600
+        ac_network = ACNetwork(device, envs, indim=ac_emb_dim).to(device)
+        self.policy_net = nn.Sequential(byol_encoder, ac_network).to(device)
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
         self.action_space = envs.action_space.n
 
         # used for sample action
@@ -50,19 +50,20 @@ class IntrinsicAgent(nn.Module):
         # pseudo count for the (s,a) pairs
         self.pseudo_ucb_coef = pseudo_ucb_coef  # the scale of the ubc count, related to empowerment
         self.I_ubc_gumbel_max_tau = I_ubc_gumbel_max_tau
-        self.pseudo_ucb_nets = UcbNets(device, args, self.action_space, dim_x, dim_y, net_num=net_num,
+        self.pseudo_ucb_nets = UcbNets(device, args, self.action_space, dim_x, dim_y, net_num=args.net_num,
                                        filter_size=filter_size, ae_sin_size=ae_sin_size, hidden_units=hidden_units).to(
             device)
 
-        self.byol_encoder = BYOLEncoder(in_channels=1, out_size=192, emb_dim=ac_emb_dim).to(device)  # output size 600
         self.ubc_statistics = TorchRunningMeanStd((args.num_envs, envs.action_space.n), device=device,
                                                   min_size=args.num_steps)  # shape of (args.num_envs, action num)
+
+
 
     def get_action(self,
                    obs_,  # (envs, dim x, dim y)
                    action_given=None,
                    given_ubc_values=None,  # (batch size, )
-                   intrinsic_reward=None  # (batch size, )
+                   intrinsic_reward=None,  # (batch size, )
                    ):
         obs_ = obs_.to(self.device).to(torch.float32)
         if given_ubc_values is None:
@@ -74,18 +75,18 @@ class IntrinsicAgent(nn.Module):
             intrinsic_reward_ = ubc_values_.mean(dim=-1)  # (env,)
 
         else:  # during training, those values are given, to guarantee on-policy-ness
+            # TODO 好像加入了UBC value之后，还是要加重要性采样，因为学习的 policy 和本来的 policy 不一样
             ubc_values_ = given_ubc_values
             intrinsic_reward_ = intrinsic_reward  # (env,)
 
-        obs_ = self.byol_encoder(obs_)
-        policy, critic = self.ac_network(obs_)  # (env,action_nums),  (env,)
+        policy, critic = self.policy_net(obs_)  # (env,action_nums),  (env,)
 
         tau_add_one = intrinsic_reward_.clone()  # (env,)
         tau_add_one[tau_add_one < self.clip_intrinsic_reward_min] = 0  # (env,)
         policy = multi_dim_softmax(logits=policy, tau_add_one=tau_add_one)  # (env,action_nums)
 
-        policy = policy + self.pseudo_ucb_coef * ubc_values_  # (env,action_nums)
-        probs = Categorical(probs=policy)
+        policy = policy + self.pseudo_ucb_coef * ubc_values_  # (env,action_nums) # TODO set self.pseudo_ucb_coef here
+        probs = Categorical(probs=policy)  # Attention！it is probs here，not logits！ no softmax here！
         if action_given is None:
             actions_arg = probs.sample()  # (env, ),  instead of torch.argmax(policy, dim=1)
         else:
@@ -97,6 +98,7 @@ class IntrinsicAgent(nn.Module):
                intrinsic_reward_, \
                critic, \
                ubc_values_
+
 
     def rollout_step(self, args, device, dim_x, dim_y, envs,
                      ep_info_buffer, ep_success_buffer, rb, global_step: int,
@@ -172,8 +174,7 @@ class IntrinsicAgent(nn.Module):
         # bootstrap value if not done
         curiosity_rewards[-1, :] = curiosity_rewards[-2, :]  # The last reward
 
-        curiosity_rewards_train = curiosity_rewards - 2 * torch.ones_like(
-            curiosity_rewards)
+        curiosity_rewards_train = curiosity_rewards  # - 2 * torch.ones_like( curiosity_rewards)
         # TODO determine the subtraction value
 
         with torch.no_grad():
@@ -212,27 +213,31 @@ class IntrinsicAgent(nn.Module):
         # self.obs_stats.update(b_obs)
 
         # train novelD
+        # mean_i_rewards = curiosity_rewards.mean()
+        # max_i_rewards = curiosity_rewards.max()
+        # self.pseudo_ucb_nets.train()
+        # _, indices = torch.sort(curiosity_rewards[:-1,:].reshape(-1))
+        # for epoch in range(args.rnd_update_epochs):  # TODO
+        #     nonzero_indices = torch.nonzero(indices[0:args.rnd_train_num * args.num_envs]).squeeze()
+        #     # Push the frontier forward,
+        #     nonzero_indices += float(args.num_envs)
+        #     # print("nonzero_indices.size() ",nonzero_indices.size())
+        #     self.pseudo_ucb_nets.train_RNDs(args, nonzero_indices, b_obs, b_actions)
+        # del curiosity_rewards, nonzero_indices
+
         mean_i_rewards = curiosity_rewards.mean()
         max_i_rewards = curiosity_rewards.max()
         self.pseudo_ucb_nets.train()
-        _, indices = torch.sort(curiosity_rewards.reshape(-1))
-        for epoch in range(args.rnd_update_epochs):  # TODO
-            nonzero_indices = torch.nonzero(indices[0:args.rnd_train_num * args.num_envs]).squeeze()
-            # print("nonzero_indices.size() ",nonzero_indices.size())
-            self.pseudo_ucb_nets.train_RNDs(args, nonzero_indices, b_obs, b_actions)
-        del curiosity_rewards, nonzero_indices
+        for epoch in range(args.rnd_update_epochs):
+            np.random.shuffle(b_inds)
+            for start in range(0, args.batch_size, args.minibatch_size):
+                end = start + args.minibatch_size
+                mb_inds = torch.from_numpy(b_inds[start:end]).to(device)
+                self.pseudo_ucb_nets.train_RNDs(args, mb_inds.long(), b_obs, b_actions.long(),
+                                                train_net_num=args.train_net_num)
+        del curiosity_rewards
 
-
-        # self.pseudo_ucb_nets.train()
-        # for epoch in range(args.rnd_update_epochs):
-        #     np.random.shuffle(b_inds)
-        #     for start in range(0, args.batch_size, args.minibatch_size):
-        #         end = start + args.minibatch_size
-        #         mb_inds = torch.from_numpy(b_inds[start:end]).to(device)
-        #         self.pseudo_ucb_nets.train_RNDs(args, mb_inds.long(), b_obs, b_actions.long())
-        # del curiosity_rewards
-
-        self.ac_network.train()
+        self.policy_net.train()
         clipfracs = []
         for epoch in range(args.update_epochs):
             np.random.shuffle(b_inds)
@@ -271,7 +276,7 @@ class IntrinsicAgent(nn.Module):
                 loss.backward()
                 if args.max_grad_norm:
                     nn.utils.clip_grad_norm_(
-                        self.ac_network.parameters(),
+                        self.policy_net.parameters(),
                         args.max_grad_norm,
                     )
                 self.optimizer.step()

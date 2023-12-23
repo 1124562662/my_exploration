@@ -6,13 +6,22 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
+from exploration_on_policy.Networks import ByolEncoder
+
+
 class ACNetwork(nn.Module):
-    def __init__(self,device, env, indim, add_one=False):
+    def __init__(self,device, action_space,
+                 byol_encoder:ByolEncoder,
+                 indim,
+                 train_logratio_clip=10,
+                 add_one=False):
         super().__init__()
         # print(dir(env))
-        last_dim = env.action_space.n
+        last_dim = action_space
+        self.train_logratio_clip = train_logratio_clip
         if add_one:
             last_dim += 1
+        self.byol_encoder = byol_encoder
         # self.conv = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=2, kernel_size=3, stride=1, padding=1),
         #                           nn.LeakyReLU(0.7),
         #                           nn.Conv2d(in_channels=2, out_channels=2, kernel_size=2, stride=1, padding=1),
@@ -21,9 +30,9 @@ class ACNetwork(nn.Module):
         # 7668 indim
         self.network1 = nn.Sequential(
             nn.Linear(indim, 520),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(0.1),
             nn.Linear(520, 500),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(0.1),
             nn.Linear(500, 200),
         )
         self.network2 = nn.Sequential(
@@ -50,6 +59,7 @@ class ACNetwork(nn.Module):
 
     def _get_feature(self, x):
         x = x.to(torch.float32)
+        x = self.byol_encoder(x)
         # x = x.view((x.size(0), 1, x.size(1), -1))
         # x = self.conv(x)
         # x = x.view(x.size(0), -1)

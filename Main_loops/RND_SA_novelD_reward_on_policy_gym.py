@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import sys
 import numpy as np
-from exploration_on_policy.ReplayBuffer_eopg import ReplayBuffer
+from exploration_on_policy.Buffers.ReplayBuffer_eopg import ReplayBuffer
 
 from exploration_on_policy.Extrinsic_agent import ExtrinsicQAgent
 from exploration_on_policy.All_intrinsic_agents.agent_rnd_Qsa_action_selection_novelD_reward import IntrinsicAgent
@@ -131,6 +131,11 @@ def parse_args():
     parser.add_argument("--int_gamma", type=float, default=0.99,
                         help="Intrinsic reward discount rate")
 
+    parser.add_argument("--net_num", type=int, default=3,
+                        help=" ")
+    parser.add_argument("--train_net_num", type=int, default=1,
+                        help="")
+
     parser.add_argument("--rnd_train_num", type=int, default=40,
                         help=" ")
     parser.add_argument("--rnd_update_epochs", type=int, default=1,
@@ -238,7 +243,6 @@ poetry run pip install "stable_baselines3==2.0.0a1" "gymnasium[atari,accept-rom-
                              pseudo_ucb_coef=args.pseudo_ucb_coef,
                              ae_sin_size=128,
                              filter_size=3,
-                             net_num=5,
                              hidden_units=512,
                              )
 
@@ -262,8 +266,8 @@ poetry run pip install "stable_baselines3==2.0.0a1" "gymnasium[atari,accept-rom-
 
     from collections import deque
 
-    ep_info_buffer = deque(maxlen=1000)
-    ep_success_buffer = deque(maxlen=1000)
+    ep_info_buffer = deque(maxlen=args.num_steps)
+    ep_success_buffer = deque(maxlen=args.num_steps)
 
 
     start_time = time.time()

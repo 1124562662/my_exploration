@@ -117,7 +117,7 @@
 
   31. RND target 可否变化？用 BYOL encoder
 
-  32. 痛点有哪些？ reward is transient/ two-level exploration: intrinsic Q and randomness/ reward's changing speed/ #TODO 待补充
+  32. 痛点有哪些？ reward is transient/ two-level exploration: intrinsic Q and randomness/ reward's changing speed/ 灾难性遗忘 #TODO 待补充
 
   33. novelD 只在有reward 的地方更新 RND！
       这样才能逐步推进frontier，原来的RND更新方法会让frontier的更新不连续。
@@ -142,7 +142,7 @@
   40. 可能还是要把agent 改成 off-policy with GAE，然后用buffer记录frontier
       这里buffer的更新规则就很有趣了，要考虑实时的novelD值高于某个阈值，还要保证buffer内frontier states的多样性。
 
-  41. 做一个小trick，就是把reward改成负值。
+  41. 做一个小trick，就是把reward改成负值。(好像没啥用，参见 Optimistic Initialization for Exploration in Continuous Control)
 
   42. 为什么agent不断自杀？我猜想也许是为了让上方显示生命的格子发生变化。
 
@@ -152,7 +152,7 @@
       rewards的归一化呢？如果新states让mean上升,似乎没啥。已探索区域的states的rewards也会变小。
       需不需要novelty detection在这个里面？
 
-  44.novelD还可以进一步，做一个differential kernel，后三步减去前三步。不过意义不一定大。
+  44. novelD还可以进一步，做一个differential kernel，后三步减去前三步。不过意义不一定大。
 
   45. RND类的方法受到物体大小的影响，大的物体变化收到的reward更多，小的物体收到的reward更小。
 
@@ -160,9 +160,57 @@
       i rewards和entropy-enforced or theta-greedy-enforced randomness/NN initialization randomness/policy churn，
       但是后者才是真正有新发现的，前者只是找到旧的发现，并寄希望于旧发现和新发现相邻。
       UBC network 属于后者而不像之前的工作属于前者。
+      使用UBC network来直接控制noise level，让noise level变得可调控，而不是固定的。（加入empowerment）
       注意这里讲故事的措辞。
 
   47. 感觉所有intrinsic reward的问题，都是持续学习带来的
+
+  48. 如果对于trajectory使用max(reward of s_i)来作为回报呢？
+
+  49. 用多个并行的小rnd mlp的好处就是，每次只更新一个，让rnd值下降的相对更可控（sample with replacement），在不用调节learning rate等超参数的情况下，不会突然下降太快
+
+  50. 现在的hard exploration benchmarks都是地图类的，有没有skills类的，让agent学习技巧而不是2D地图
+
+  51. RND的用处在于，其泛化能力代替了最直接的visitation counts。这像某种hash function一样，节约了直接保存visited states的空间。
+      RND的问题也同样在于，其泛化能力是不可控的
+      对于RND来说，如果训练陷入困局，到底什么留了下来？policy不是，那就只有RND本身了。
+
+  52，这种intrinsic reward仅仅在RL游戏里去做很无聊，不如加入到别的方面。比如对于数据集的处理。
+
+  53. 把 BYOL 作为世界模型，然后在世界模型里直接优化找到frontiers，而不用buffer？
+      或者至少不用记录到frontier的整个trajectory。
+
+  54. 如果把BYOL预测长度限制为H的话，只记录H长的trajectory，此时replay buffer将有两个作用，
+      一个是记录frontier来应对policy的灾难性遗忘，一个是作为BYOL world model的replay buffer避免BYOL的灾难性遗忘的。
+      这样就会带来一个问题，frontier的loss value一直很低，因为byol在不停的被重新训练。
+      frontier s 的novelty值由 variance{BYOL_i(s,a)} 来更新。
+
+      也就是说，action selection 是 disagreement = variance{BYOL_i(s,a)}，
+      而BYOL训练的是 byol prediction loss，
+      policy得到的reward是?
+
+  55. 一点感想：go explore需要记住整个frontier，而相似的frontier可能有很多甚至无穷多个。
+      考虑不同frontiers之间的距离，在有限的buffer空间里记住尽量不同的frontiers，而用policy本身的exploration ability（pseudo ucb）去处理相似的frontiers，从而节省buffer空间。
+      transition-aware similarity 来决定diversity比NGU直接用图片更合理， 因为画面中会有一些无关的物体，或者看着截然不同的画面可能其实离得很近，
+      这样导致diversity度量不准确。
+
+  56. 感觉现在的内禀回报太low-level了，就是在走迷宫，有没有higher level一点的呢？做看上去更“智能”的事情？
+      a)可以把intrinsic reward推广到主动学习，让nn的information gain = 新来的数据的intrinsic reward
+      b) intrinsic reward based rl for adversarial robustness
+      c) language abstraction
+      世界模型更偏重预测，像是物理学家。而学习skills更像是改变世界，像是工程师。
+      假设world model都知道了，也不代表工程技术都能解决。
+      如何成为工程师？如何把这个刻画为一个内禀回报的问题？
+      如何提出好的‘工程难题’？
+      什么是‘好’？
+
+  57. 在montezuma上加一块噪声patch，goal conditioned Go-explore会失败吗？
+
+  58. RND buffer中，为什么encoder不假设它有灾难性遗忘，而对policy假设有？ encoder 的目标的静态的，而policy学习的目标是动态的。
+
+
+
+
 
 
 

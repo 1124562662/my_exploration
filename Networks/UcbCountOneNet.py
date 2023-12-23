@@ -29,9 +29,9 @@ class UcbCountOneNet(nn.Module):
                  filter_size: int = 40,
                  ae_sin_size=128,
                  hidden_units=512,
+                 in_dim:int=3834,
                  ):
         super(UcbCountOneNet, self).__init__()
-        in_dim = 3834  # TODO
         self.action_num = action_num  # env.action_space.n
         self.embed_dim = embed_dim
         self.target = target
@@ -51,9 +51,10 @@ class UcbCountOneNet(nn.Module):
                                   nn.LeakyReLU(0.3),
                                   )
 
-        num_hidden = 2
+        num_hidden = 1
         if not target:
-            num_hidden += 2
+            num_hidden += 1
+
         self.models = create_mlp(in_dim + ae_sin_size, num_hidden, hidden_units, embed_dim)
 
         if not target:
@@ -65,13 +66,15 @@ class UcbCountOneNet(nn.Module):
             self.action_embeddings_sin = nn.Embedding.from_pretrained(action1).to(device)
 
             amend = self.action_num % 4
-            action2 = (positionalencoding2d(self.action_num + amend, dim_x, dim_y)[amend:,:,:]).reshape((self.action_num,-1)).to(device)
+            amend = 4 - amend
+            action2 = (positionalencoding2d(self.action_num + amend, dim_x, dim_y)[:-amend,:,:]).reshape((self.action_num,-1)).to(device)
             self.action_embeddings_randn = nn.Embedding.from_pretrained( action2).to(device)
 
     @torch.no_grad()
     def forward(self,
                 obs,  # (envs, dim_x,dim_y)
                 ):
+        assert len(obs.shape) == 3, "ubc one net"
         obs = obs.detach().to(torch.float32)
         envs = obs.size(0)
         device = obs.device
@@ -91,6 +94,7 @@ class UcbCountOneNet(nn.Module):
                                                                                                           -1)  # (envs, action channels, ae_sin size)
         ae_sin = ae_sin.detach()
         y = torch.cat((y, ae_sin), dim=2)  # (envs, action channels, in_dim + ae_sin size)
+        # print("rnd one net after CNN size (im dim)", y.shape[2]- self.ae_sin_size)
         res = self.models(y)  # (envs, action channels, embeds)
         return res  # (env,action_nums,embed_dim)
 
@@ -110,7 +114,7 @@ class UcbCountOneNet(nn.Module):
         res = self.models(y)  # (N , embeds)
         return res  # (N , embeds)
 
-    def train_RND(self, device, args,
+    def train_RND(self, args,
                   mb_inds,  # (mini_batch_size,)
                   b_obs,  # (N, dim_x,dim_y)
                   b_actions,  # (N,)
@@ -191,7 +195,7 @@ if __name__ == "__main__":
             b_actions = b_actions.to(device)
             target = target.to(device)
             with torch.cuda.stream(stream):
-                module.train_RND(device, args, mb_inds, b_obs, b_actions, pseudo_ucb_target=target)
+                module.train_RND( args, mb_inds, b_obs, b_actions, pseudo_ucb_target=target)
 
         for stream in streams:
             stream.synchronize()

@@ -55,7 +55,6 @@ class RNDBufferEncoder(nn.Module):
                       intrinsic_rewards: torch.Tensor = None,  # sample based on this
                       minibatch_num: int = 20,
                       epochs: int = 1,
-                      K: int = 6,
                       ):
         # 对比学习，IDM model
         batch_size = states.size(0) - 1
@@ -133,3 +132,16 @@ class RNDBufferEncoder(nn.Module):
         self.encoder_optim.zero_grad()
         loss.backward()
         self.encoder_optim.step()
+
+    @torch.no_grad()
+    def get_diversity(self,
+                      states_A: torch.Tensor,  # (a, dim x ,dim y)
+                      states_B: torch.Tensor,  # (b, dim x ,dim y)
+                      tau: float = 1.0,
+                      ):
+        # TODO --  use target encoder or the encoder?
+        a = torch.nn.functional.normalize(self.b_encoder.encoder_target(states_A), dim=1)  # (a, emb)
+        b = torch.nn.functional.normalize(self.b_encoder.encoder_target(states_B), dim=1)  # (b, emb)
+        res = torch.matmul(a, b.t())  # (a,b)
+        res = torch.sigmoid(res / tau)  # (a,b)
+        return res  # (a,b) # TODO -- diversities standardization

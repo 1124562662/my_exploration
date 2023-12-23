@@ -86,7 +86,7 @@ def from_importance_weights(log_rhos,
                             bootstrap_value,
                             clip_rho_threshold=1.0,
                             clip_pg_rho_threshold=1.0):
-    """V-trace from log importance weights."""
+    """ V-trace from log importance weights. """
     with torch.no_grad():
         rhos = torch.exp(log_rhos)
         if clip_rho_threshold is not None:
