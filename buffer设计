@@ -1,5 +1,0 @@
-迭代更新RND和E network，最好等E network收敛之后，再更新RND（改变 E value的MDP）
-如何判断 E network 收敛？ 几次训练时的error小于一个特定值（单纯凭借这个还是无法解决 detachment）
-如果buffer满了，那就不再rollout，只用buffer内的数据训练，直到训练到收敛。
-
-RND更新之后， E value的MDP发生改变，buffer中原有的数据需要保留吗？
