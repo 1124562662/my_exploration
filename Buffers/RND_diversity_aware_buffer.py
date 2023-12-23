@@ -181,7 +181,7 @@ class RNDReplayBuffer:
             done: torch.Tensor,  # (rollout len, envs,
             log_probs: torch.Tensor,  # (rollout len, envs)
             rnd_module: UcbNets,
-            policy_net: nn.Module = None,
+            policy_net: ACNetwork = None,
             policy_net_optimizer=None,
     ) -> None:
         if not self.buffer_ah.die:
@@ -545,13 +545,13 @@ if __name__ == "__main__":
                          filter_size=3, ae_sin_size=12, hidden_units=10, in_dim=1530).to(
         device)
 
-    for _ in range(7777):
+    for jjjjj in range(7777):
         obs = torch.randn((roll_out_len, n_envs, dim_x, dim_y), device=device)/2  # TODO 这个device真实吗？
         rnd_values = rnd_module(obs.reshape(-1, dim_x, dim_y)).sum(1).reshape(roll_out_len, n_envs)  # * math.sqrt(i)
         rnd_values[1:] -= 0.5 * rnd_values[:-1]  # *  math.sqrt(i**2)
         # rnd_values = torch.randn((roll_out_len, n_envs), device=device) #* math.sqrt(i)
         rnd_values_min = 0.01  # * math.sqrt(i)
-        print("round", math.sqrt(i), "*****************************************************")
+        print("round", math.sqrt(jjjjj), "*****************************************************")
         actions = torch.randint(high=action_space, size=(roll_out_len, n_envs), device=device)
         done = torch.randint(high=2, size=(roll_out_len, n_envs), device=device)
         obs_v = obs.reshape(-1, dim_x, dim_y).unsqueeze(1)

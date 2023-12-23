@@ -62,6 +62,7 @@ class IntrinsicAgent(nn.Module):
                                                   min_size=args.num_steps)  # shape of (args.num_envs, action num)
 
         self.use_only_UBC_exploration_threshold = use_only_UBC_exploration_threshold
+        self.train_with_buffer_interval = args.train_with_buffer_interval
 
     def get_action_train(self,
                          obs_  # (batch size,  dim x, dim y)
@@ -139,6 +140,8 @@ class IntrinsicAgent(nn.Module):
         int_returns = int_advantages + int_values
         return int_returns, int_advantages
 
+
+
     def rollout_step(self, args, device, dim_x, dim_y, envs,
                      ep_info_buffer, ep_success_buffer, rb,
                      global_step: int,
@@ -159,6 +162,9 @@ class IntrinsicAgent(nn.Module):
             # self.obs_stats.count = 80
             self.ubc_statistics.count = args.num_steps
             print("End to initialize...")
+        elif global_step/self.train_with_buffer_interval == 0:
+            rnd_buffer.train_policy(epoch=args.rnd_buffer_train_off_policy_epoches,rnd_module=self.pseudo_ucb_nets,policy_net=self.policy_net,
+                                    policy_net_optimizer=self.optimizer,sample_from_buffer=True)
 
         obs = torch.zeros((args.num_steps, args.num_envs) + (dim_x, dim_y)).to(device)  # (steps, env nums, dimx,dimy)
         actions = torch.zeros((args.num_steps, args.num_envs), dtype=torch.long).to(device)

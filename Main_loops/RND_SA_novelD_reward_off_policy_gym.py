@@ -162,7 +162,10 @@ def parse_args():
                         help=" ")
     parser.add_argument("--initial_encoder_train_epoches", type=int, default=400,
                         help=" ")
-
+    parser.add_argument("--train_with_buffer_interval", type=int, default=100,
+                        help=" ")
+    parser.add_argument("--rnd_buffer_train_off_policy_epoches", type=int, default=5,
+                        help=" ")
     args = parser.parse_args()
     args.batch_size = int(args.num_envs * args.num_steps)
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
