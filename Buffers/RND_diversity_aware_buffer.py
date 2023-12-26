@@ -157,12 +157,12 @@ class RNDReplayBuffer:
             mem_available /= 1024 ** 3
             print(f"total_memory_usage is {total_memory_usage:.2f}GB, while mem_available is {mem_available:.2f}GB")
 
-    @torch.no_grad()
-    def update_encoder_target(self):
-        self.b_encoder.encoder_ema.update_moving_average()
+    # @torch.no_grad()
+    # def update_encoder_target(self):
+    #     self.b_encoder.encoder_ema.update_moving_average()
 
     def train_encoder_with_buffer(self):
-        pass #TODO
+        pass  # TODO
 
     def train_encoder(self,
                       states: torch.Tensor,  # (B, rollout, dim x, dim y)
@@ -232,7 +232,7 @@ class RNDReplayBuffer:
                     emb = self.b_encoder(obv_i.unsqueeze(1)).mean(0) if emb is None else self.b_encoder(
                         obv_i.unsqueeze(1)).mean(0) + emb
                 emb /= self.buffer_size
-                self.b_encoder.center = emb.to(self.b_encoder.device)
+                self.b_encoder.set_center(emb.to(self.b_encoder.device))
                 diversities = self.b_encoder.get_diversity(self.frontier,
                                                            self.frontier,
                                                            tau=2,
@@ -242,10 +242,6 @@ class RNDReplayBuffer:
                 self.f_novelty_diversity = (
                         diversities.cpu() * self.f_novelties).cpu().detach().clone()  # (frontier size,)
                 self.dependency_indices = d_indices.to(torch.long).cpu().detach().clone()  # (frontier size,)
-
-                # calculate the heap
-                # self.min_heap = [Traj(nd_val.item(), i,self.dependency_indices[i],self.f_novelties[i]) for i, nd_val in enumerate(self.f_novelty_diversity)]
-                # heapq.heapify(self.min_heap)
 
         # add 时候整块加进来，
         # 缓存前n块。
@@ -271,28 +267,32 @@ class RNDReplayBuffer:
                   idx, nd in enumerate(novelties_diversities)]  # obs_idx is [ frontier idx, env idx]
         heapq.heapify(f_heap)
 
-        all_heap = [
-            Traj(nd_value=nd, obs_idx=idx, dependent_idx=self.dependency_indices[idx], rnd_v=self.f_novelties[idx]) for
-            idx, nd in enumerate(self.f_novelty_diversity)]
-        heapq.heapify(all_heap)
-        n_small = heapq.nsmallest(self.n_envs, all_heap, key=lambda pp: pp.nd_value)  # (n_envs,)
+        _, all_min_idx = torch.topk(self.f_novelty_diversity, k=self.n_envs, largest=False)  # (n_envs,)
+        n_small = [Traj(nd_value=self.f_novelty_diversity[idx],
+                        obs_idx=idx,
+                        dependent_idx=self.dependency_indices[idx],
+                        rnd_v=self.f_novelties[idx]) for idx in all_min_idx]
         heapq.heapify(n_small)
+
+        # all_heap = [
+        #     Traj(nd_value=nd, obs_idx=idx, dependent_idx=self.dependency_indices[idx], rnd_v=self.f_novelties[idx]) for
+        #     idx, nd in enumerate(self.f_novelty_diversity)]
 
         add_li, delete_li = [], []
         while len(f_heap) > 0 and len(n_small) > 0:
             if f_heap[0].getKey() > n_small[0].getKey():
                 f_traj = heapq.heappop(f_heap)
                 add_li.append(f_traj)
-                old_traj = heapq.heappop(all_heap)
+                old_traj = heapq.heappop(n_small)
                 delete_li.append(old_traj)
 
-                heapq.heappush(all_heap, Traj(nd_value=f_traj.nd_value,
-                                              obs_idx=old_traj.obs_idx, dependent_idx=f_traj.dependent_idx,
-                                              rnd_v=f_traj.rnd_v))  #
+                heapq.heappush(n_small, Traj(nd_value=f_traj.nd_value,
+                                             obs_idx=old_traj.obs_idx, dependent_idx=f_traj.dependent_idx,
+                                             rnd_v=f_traj.rnd_v))  #
                 # replace the old traj with a new one in the heap TODO 其实这一步引发的变化没有考虑
             else:
                 _ = heapq.heappop(f_heap)
-        del all_heap
+        del n_small, all_min_idx, _
 
         buffer_idx = torch.tensor([traj.obs_idx for traj in delete_li], dtype=torch.long)  # (add num,)
 
@@ -342,7 +342,7 @@ class RNDReplayBuffer:
                                                        self.frontier)  # (update nums, buffer size )
                 new_div, new_dpt = torch.min(new_div, dim=1)  # (update nums,), (update nums,)
                 self.f_novelty_diversity[update_idx] = (
-                            new_div.squeeze().cpu() * self.f_novelties[update_idx].squeeze()).cpu()
+                        new_div.squeeze().cpu() * self.f_novelties[update_idx].squeeze()).cpu()
                 self.dependency_indices[update_idx] = new_dpt.to(torch.long).cpu().clone()
 
     def train_policy(self,
@@ -353,7 +353,7 @@ class RNDReplayBuffer:
                      sample_from_buffer: bool = True,
                      batch_size: int = None,
                      minibatch_size=80,
-                     train_logratio_clip= 10,
+                     train_logratio_clip=10,
                      obs: torch.Tensor = None,  # (B, traj len, dim x, dim y)
                      actions: torch.Tensor = None,  # (B, traj len,
                      dones: torch.Tensor = None,  # (B, traj len,
@@ -538,9 +538,8 @@ if __name__ == "__main__":
                              initial_encoder_train_epoches=1, )
     device = "cuda:0"
     ac_emb_dim = 23
-    # TODO 把byol_encoder里面的 BN完全去掉，完全放在AC net里面
     byol_encoder = BYOLEncoder(in_channels=1, out_size=32, emb_dim=ac_emb_dim).to(device)  # output size 600
-    ac_network = ACNetwork(device, action_space,byol_encoder=byol_encoder, indim=ac_emb_dim).to(device)
+    ac_network = ACNetwork(device, action_space, byol_encoder=byol_encoder, indim=ac_emb_dim).to(device)
     policy_net = ac_network.to(device)
     optimizer = optim.Adam(policy_net.parameters(), lr=0.001)
 
@@ -549,7 +548,7 @@ if __name__ == "__main__":
         device)
 
     for jjjjj in range(7777):
-        obs = torch.randn((roll_out_len, n_envs, dim_x, dim_y), device=device)/2  # TODO 这个device真实吗？
+        obs = torch.randn((roll_out_len, n_envs, dim_x, dim_y), device=device) / 2  # TODO 这个device真实吗？
         rnd_values = rnd_module(obs.reshape(-1, dim_x, dim_y)).sum(1).reshape(roll_out_len, n_envs)  # * math.sqrt(i)
         rnd_values[1:] -= 0.5 * rnd_values[:-1]  # *  math.sqrt(i**2)
         # rnd_values = torch.randn((roll_out_len, n_envs), device=device) #* math.sqrt(i)
