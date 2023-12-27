@@ -161,8 +161,19 @@ class RNDReplayBuffer:
     # def update_encoder_target(self):
     #     self.b_encoder.encoder_ema.update_moving_average()
 
-    def train_encoder_with_buffer(self):
-        pass  # TODO
+    def train_encoder_with_buffer(self,
+                                  batch_size:int,
+                                  ):
+        assert  0 < batch_size < self.buffer_size
+        b_inds = np.arange(self.buffer_size)
+        np.random.shuffle(b_inds)
+        b_inds = b_inds[batch_size:]
+        for i in b_inds:
+            self.b_encoder.train_encoder(self.observations[i,:,:,:].unsqueeze(0),
+                                         self.actions[i,:].unsqueeze(0),
+                                         )
+
+
 
     def train_encoder(self,
                       states: torch.Tensor,  # (B, rollout, dim x, dim y)

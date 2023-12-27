@@ -163,13 +163,15 @@ class IntrinsicAgent(nn.Module):
             print("End to initialize...")
 
         elif global_step / self.train_with_buffer_interval == 0:
+            # train the policy with the buffer
+            # and train the buffer encoder
             for _ in range(args.rnd_buffer_train_off_policy_times):
                 rnd_buffer.train_policy(epoch=args.rnd_buffer_train_off_policy_epoches,
                                         rnd_module=self.pseudo_ucb_nets,
                                         policy_net=self.policy_net,
                                         policy_net_optimizer=self.optimizer,
                                         sample_from_buffer=True)
-
+                rnd_buffer.train_encoder_with_buffer(int(rnd_buffer.buffer_size/10))
 
         obs = torch.zeros((args.num_steps, args.num_envs) + (dim_x, dim_y)).to(device)  # (steps, env nums, dimx,dimy)
         actions = torch.zeros((args.num_steps, args.num_envs), dtype=torch.long).to(device)
@@ -229,7 +231,13 @@ class IntrinsicAgent(nn.Module):
         curiosity_rewards[-1, :] = curiosity_rewards[-2, :]  # The last reward
 
         # Add the result to the rnd buffer
-        rnd_buffer.add(obs, rnd_rewards, self.clip_intrinsic_reward_min, actions, dones, logprobs, self.pseudo_ucb_nets,
+        rnd_buffer.add(obs,
+                       rnd_rewards,
+                       self.clip_intrinsic_reward_min,
+                       actions,
+                       dones,
+                       logprobs,
+                       self.pseudo_ucb_nets,
                        self.policy_net, self.optimizer)
 
         # TODO -- 注意！ 这里和 RND 一样没有考虑 dones，没有 episode

@@ -208,6 +208,26 @@
 
   58. RND buffer中，为什么encoder不假设它有灾难性遗忘，而对policy假设有？ encoder 的目标的静态的，而policy学习的目标是动态的。
 
+  59. BYOL 的reward 到底是什么，如果是disagreement的话，就有‘虚假的相同泛化bias’问题
+
+  60. 什么是empowerment？
+    对于 state s 来说，the states diversity following state s！
+    具体的，可以用representation 的diversity，比如 variance来断定！
+    预测这个diversity可以作为intrinsic reward！
+    和伯恩斯坦不等式差不多
+    设s的empowerment为 E(s)
+    设s的总体empowerment为 GE(s) -- GE会考虑后续states的E值/分叉值
+
+    TD rule is：
+    GE(s) =  E_{P(s'|s,a)}[ E(s) * \gamma * GE(s')] + E(s)
+    注意上面是乘法，用二叉树的例子就是一个经常分叉的二叉树树根应该有很大的GE，
+    而一个只分叉一次的二叉树树根应该有GE(root) = E(root)
+    加一些GE的理论分析
+
+    自身E值大+后续状态E值大的GE > 自身E值大+后续状态E值小的GE > 自身E值小+后续状态E值大的GE > 自身E值小+后续状态E值小的GE > 自身E值为零的GE = 0
+    如何知道E值？
+
+
 
 
 
