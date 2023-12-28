@@ -29,7 +29,7 @@ class UcbCountOneNet(nn.Module):
                  filter_size: int = 40,
                  ae_sin_size=128,
                  hidden_units=512,
-                 in_dim:int=3834,
+                 in_dim: int = 3834,
                  ):
         super(UcbCountOneNet, self).__init__()
         self.action_num = action_num  # env.action_space.n
@@ -67,8 +67,9 @@ class UcbCountOneNet(nn.Module):
 
             amend = self.action_num % 4
             amend = 4 - amend
-            action2 = (positionalencoding2d(self.action_num + amend, dim_x, dim_y)[:-amend,:,:]).reshape((self.action_num,-1)).to(device)
-            self.action_embeddings_randn = nn.Embedding.from_pretrained( action2).to(device)
+            action2 = (positionalencoding2d(self.action_num + amend, dim_x, dim_y)[:-amend, :, :]).reshape(
+                (self.action_num, -1)).to(device)
+            self.action_embeddings_randn = nn.Embedding.from_pretrained(action2).to(device)
 
     @torch.no_grad()
     def forward(self,
@@ -118,15 +119,21 @@ class UcbCountOneNet(nn.Module):
                   mb_inds,  # (mini_batch_size,)
                   b_obs,  # (N, dim_x,dim_y)
                   b_actions,  # (N,)
+                  actual_i_rewards,  # (N,)  在哪里获得了rewards，policy去哪里就会被增强， rnd net就该训练哪里
                   t_embs=None,  # (N , embeds)
                   pseudo_ucb_target: nn.Module = None, ):
+        assert len(b_obs.shape) == 3 and len(b_actions.shape) == len(actual_i_rewards.shape) == 1
+        assert b_obs.shape[0] == b_actions.shape[0] == actual_i_rewards.shape[0]
+
         if t_embs is None and pseudo_ucb_target is not None:
             with torch.no_grad():
                 t_embs = pseudo_ucb_target.forward_with_action_indices(b_obs, b_actions)  # (N , embeds)
         for i in range(args.minibatch_size):
             y_embs = self.forward_with_action_indices(b_obs[mb_inds, :, :], b_actions[mb_inds])  # (M , embeds)
             t_embs_view = t_embs[mb_inds, :]  # (M , embeds)
-            loss = F.mse_loss(y_embs, t_embs_view.detach())
+            loss = F.mse_loss(y_embs, t_embs_view.detach(), reduction='none').mean(1)  # (M ,
+            loss *= actual_i_rewards[mb_inds].detach()  # (M,) 在哪里获得了rewards，policy去哪里就会被增强， rnd net就该训练哪里
+            loss = loss.mean()
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -195,7 +202,7 @@ if __name__ == "__main__":
             b_actions = b_actions.to(device)
             target = target.to(device)
             with torch.cuda.stream(stream):
-                module.train_RND( args, mb_inds, b_obs, b_actions, pseudo_ucb_target=target)
+                module.train_RND(args, mb_inds, b_obs, b_actions, pseudo_ucb_target=target)
 
         for stream in streams:
             stream.synchronize()

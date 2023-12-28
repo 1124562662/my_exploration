@@ -18,18 +18,19 @@ class UcbNets(nn.Module):
                  filter_size: int = 40,
                  ae_sin_size=128,
                  hidden_units=512,
-                 in_dim = 3834,
+                 in_dim=3834,
                  ):
         super(UcbNets, self).__init__()
-        self.device=device
+        self.device = device
         self.embed_dim = args.embed_dim
         self.net_num = net_num
         self.target = UcbCountOneNet(device, args, action_num, dim_x, dim_y, self.embed_dim, None, None, True,
                                      filter_size,
-                                     ae_sin_size, hidden_units,in_dim=in_dim).to(device)
+                                     ae_sin_size, hidden_units, in_dim=in_dim).to(device)
         self.nets = [
             UcbCountOneNet(device, args, action_num, dim_x, dim_y, self.embed_dim, self.target.action_embeddings_sin,
-                           self.target.action_embeddings_randn, False, filter_size, ae_sin_size, hidden_units, in_dim= in_dim).to(
+                           self.target.action_embeddings_randn, False, filter_size, ae_sin_size, hidden_units,
+                           in_dim=in_dim).to(
                 device) for i in
             range(net_num)]
 
@@ -59,17 +60,19 @@ class UcbNets(nn.Module):
         else:
             raise NotImplementedError("cuda only")
 
-
-
     def train_RNDs(self, args,
                    mb_inds,  # (mini_batch_size,)
                    b_obs,  # (N, dim_x,dim_y)
                    b_actions,  # (N,)
+                   actual_i_rewards,  # (N,) 在哪里获得了rewards，policy去哪里就会被增强， rnd net就该训练哪里
                    train_net_num: int = 2,
                    ):
         assert train_net_num < self.net_num, "train_net_num<self.net_num"
+        assert actual_i_rewards.shape[0] == b_actions.shape[0] == b_obs.shape[0]
+
         b_obs = b_obs.to(self.device)
-        b_actions =b_actions.to(self.device)
+        b_actions = b_actions.to(self.device)
+        actual_i_rewards = actual_i_rewards.to(self.device)
 
         train_nets = random.sample(self.nets, train_net_num)
         if torch.cuda.is_available():
@@ -85,16 +88,11 @@ class UcbNets(nn.Module):
                 # b_obs = b_obs.to(device)
                 # b_actions = b_actions.to(device)
                 with torch.cuda.stream(stream):
-                    module.train_RND(args, mb_inds, b_obs, b_actions, t_embs=t_embs)
+                    module.train_RND(args, mb_inds, b_obs, b_actions,actual_i_rewards, t_embs=t_embs)
             for stream in streams:
                 stream.synchronize()
         else:
             raise NotImplementedError("cuda only")
-
-
-
-
-
 
     # @torch.no_grad()
     # def forward_with_actions(self,
@@ -123,18 +121,5 @@ class UcbNets(nn.Module):
     #
     #     else:
     #         raise NotImplementedError("cuda only")
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # if __name__ == "__main__":

@@ -26,7 +26,7 @@
 
   What is the source of exploration?
   Random novel behaviour! exploration policy is only used to guide the agent towards a
-  'interesting/empowered' state, such that the agent can explore randomly.
+  'interesting/empowered' state, such that the agent can then explore randomly.
 
   To determine if a state can be a 'start' that worth store -- if it can DIRECTLY lead to novel states.
 
@@ -206,7 +206,8 @@
 
   57. 在montezuma上加一块噪声patch，goal conditioned Go-explore会失败吗？
 
-  58. RND buffer中，为什么encoder不假设它有灾难性遗忘，而对policy假设有？ encoder 的目标的静态的，而policy学习的目标是动态的。
+  58. RND buffer中，为什么encoder不假设它有灾难性遗忘，而对policy假设有？
+      encoder 的目标的静态的，而policy学习的目标是动态的。
 
   59. BYOL 的reward 到底是什么，如果是disagreement的话，就有‘虚假的相同泛化bias’问题
 
@@ -225,7 +226,20 @@
     加一些GE的理论分析
 
     自身E值大+后续状态E值大的GE > 自身E值大+后续状态E值小的GE > 自身E值小+后续状态E值大的GE > 自身E值小+后续状态E值小的GE > 自身E值为零的GE = 0
-    如何知道E值？
+    如何确定E值? Var[p(s'|s,a)]
+    E(s,a) = buffer prediction error of (s,a,s')
+    for state s, different a might have different Var[p(s'|s,a)]
+
+  61. 调整一下，为了让agent不来回蠕动，增加RND更新频率（类似NGU的作用），但为了policy的bias小，需要MC采样，rollout len需要大
+
+  62. 对于dones的处理 -- 对于死前最后一个状态的V值估计，不光要考虑其V值，还有rnd值（未解决）
+
+  63. 在哪里获得了rewards，policy去哪里就会被增强， rnd net就该训练哪里
+      这样，每个state 的历史总rnd值 能给policy贡献的V值是个总量（怎么证明？）
+      就像能量一样，被消耗的RND值被传输耗散到哪里了？
+
+  64. detachment的还有一个原因是TD不通畅的问题
+
 
 
 

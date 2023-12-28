@@ -37,13 +37,14 @@ class IntrinsicAgent(nn.Module):
                  use_only_UBC_exploration_threshold: float = 0.7,
                  ):
         super(IntrinsicAgent, self).__init__()
+        self.use_only_UBC_exploration_threshold = args.use_only_UBC_exploration_threshold
         self.envs = envs
         self.device = device
         self.clip_intrinsic_reward_min = args.clip_intrinsic_reward_min
 
         byol_encoder = BYOLEncoder(in_channels=1, out_size=600, emb_dim=ac_emb_dim).to(device)  # output size 192
         self.policy_net = ACNetwork(device, action_space=envs.action_space.n, byol_encoder=byol_encoder,
-                                    indim=ac_emb_dim).to(device) #TODO 加一个 extrinsic reward 的 head？
+                                    indim=ac_emb_dim).to(device)  # TODO 加一个 extrinsic reward 的 head？
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
         self.action_space = envs.action_space.n
 
@@ -81,10 +82,8 @@ class IntrinsicAgent(nn.Module):
     def get_action(self,
                    obs_,  # (envs, dim x, dim y)
                    ):
-        # TODO
-        self.use_only_UBC_exploration_threshold = 0.7
 
-        assert len(obs_.shape) == 3,"get_action"
+        assert len(obs_.shape) == 3, "get_action"
         obs_ = obs_.to(self.device).to(torch.float32)
         # pseudo count of UBC
         ubc_values = self.pseudo_ucb_nets(obs_)  # (env,action_nums)
@@ -147,6 +146,8 @@ class IntrinsicAgent(nn.Module):
                      next_obs,
                      rnd_buffer: RNDReplayBuffer,
                      ):
+        assert args.num_steps / args.rnd_train_freq == 0
+
         if global_step == 0:
             print("Start to initialize observation normalization parameter.....")
             envs.reset()
@@ -171,7 +172,7 @@ class IntrinsicAgent(nn.Module):
                                         policy_net=self.policy_net,
                                         policy_net_optimizer=self.optimizer,
                                         sample_from_buffer=True)
-                rnd_buffer.train_encoder_with_buffer(int(rnd_buffer.buffer_size/10))
+                rnd_buffer.train_encoder_with_buffer(int(rnd_buffer.buffer_size / 10))
 
         obs = torch.zeros((args.num_steps, args.num_envs) + (dim_x, dim_y)).to(device)  # (steps, env nums, dimx,dimy)
         actions = torch.zeros((args.num_steps, args.num_envs), dtype=torch.long).to(device)
@@ -211,24 +212,46 @@ class IntrinsicAgent(nn.Module):
 
                 # total curiosity rewards
                 curiosity_rewards[step - 1] = novelD_reward
+            if step == args.num_steps -1:
+                curiosity_rewards[step] = curiosity_rewards[step - 1]
+
+
             # update for novelD
             previous_intrinsic_rewards = rnd_intrinsic_reward.clone()
 
             # env step() call
             real_next_obs, rewards, next_done, infos = envs.step(actions_arg)
-            envs.render("human")
+            if args.render_human:
+                envs.render("human")
+
             real_next_obs = obvs_preprocess(real_next_obs, device=device)  # ,obs_stats=self.obs_stats)
 
             extrinsic_rewards[step] = torch.from_numpy(rewards).to(device)
 
             update_info_buffer(ep_info_buffer, ep_success_buffer, infos, next_done)
-            # real_next_obs = real_next_obs.clone() TODO -- what is this?
+
             rb.add(next_obs.cpu().detach().numpy(), real_next_obs.cpu().detach().numpy(), actions_arg.cpu().numpy(),
                    rewards, next_done, infos)
             next_obs = real_next_obs
 
-        # bootstrap value if not done
-        curiosity_rewards[-1, :] = curiosity_rewards[-2, :]  # The last reward
+            if step % args.rnd_train_freq == args.rnd_train_freq-1:
+                self.pseudo_ucb_nets.train()
+                b_obs_r = obs[step-args.rnd_train_freq+1:step+1].reshape((-1,) + (dim_x, dim_y))
+                b_actions_r = actions[step-args.rnd_train_freq+1:step+1].reshape(-1)
+                b_actual_r = curiosity_rewards[step-args.rnd_train_freq+1:step+1].reshape(-1)
+                b_size = b_obs_r.shape[0]
+                b_inds_r = np.arange()
+                for epoch in range(args.rnd_update_epochs):
+                    np.random.shuffle(args.rnd_train_freq)
+                    for start in range(0, b_size, args.minibatch_size):
+                        end = start + args.minibatch_size
+                        end = end if end < b_size else b_size
+                        if start >= end:
+                            break
+                        mb_inds = torch.from_numpy(b_inds_r[start:end]).to(device)
+                        self.pseudo_ucb_nets.train_RNDs(args, mb_inds.long(), b_obs_r, b_actions_r.long(),
+                                                        b_actual_r,train_net_num=args.train_net_num)
+                self.pseudo_ucb_nets.eval()
 
         # Add the result to the rnd buffer
         rnd_buffer.add(obs,
@@ -240,12 +263,14 @@ class IntrinsicAgent(nn.Module):
                        self.pseudo_ucb_nets,
                        self.policy_net, self.optimizer)
 
+        # bootstrap value if not done
         # TODO -- 注意！ 这里和 RND 一样没有考虑 dones，没有 episode
         int_returns, int_advantages = self.calculate_off_policy_gae(next_obs, curiosity_rewards, args, device,
                                                                     log_probS_og, logprobs, int_values)
-        del int_values
-        del extrinsic_rewards
-        del logprobs
+
+        mean_i_rewards = curiosity_rewards.mean()
+        max_i_rewards = curiosity_rewards.max()
+        del int_values,extrinsic_rewards,logprobs,curiosity_rewards
 
         # flatten the batch
         b_obs = obs.reshape((-1,) + (dim_x, dim_y))
@@ -258,34 +283,6 @@ class IntrinsicAgent(nn.Module):
 
         # update stats
         # self.obs_stats.update(b_obs)
-
-        # train novelD
-        # mean_i_rewards = curiosity_rewards.mean()
-        # max_i_rewards = curiosity_rewards.max()
-        # self.pseudo_ucb_nets.train()
-        # _, indices = torch.sort(curiosity_rewards[:-1,:].reshape(-1))
-        # for epoch in range(args.rnd_update_epochs):  # TODO
-        #     nonzero_indices = torch.nonzero(indices[0:args.rnd_train_num * args.num_envs]).squeeze()
-        #     # Push the frontier forward,
-        #     nonzero_indices += float(args.num_envs)
-        #     # print("nonzero_indices.size() ",nonzero_indices.size())
-        #     self.pseudo_ucb_nets.train_RNDs(args, nonzero_indices, b_obs, b_actions)
-        # del curiosity_rewards, nonzero_indices
-
-        mean_i_rewards = curiosity_rewards.mean()
-        max_i_rewards = curiosity_rewards.max()
-        self.pseudo_ucb_nets.train()
-        for epoch in range(args.rnd_update_epochs):
-            np.random.shuffle(b_inds)
-            for start in range(0, b_size, args.minibatch_size):
-                end = start + args.minibatch_size
-                end = end if end < b_size else b_size
-                if start >= end:
-                    break
-                mb_inds = torch.from_numpy(b_inds[start:end]).to(device)
-                self.pseudo_ucb_nets.train_RNDs(args, mb_inds.long(), b_obs, b_actions.long(),
-                                                train_net_num=args.train_net_num)
-        del curiosity_rewards
 
         # TODO PPO 也要根据 off policy修改
         self.policy_net.train()
@@ -338,3 +335,18 @@ class IntrinsicAgent(nn.Module):
                     break
 
         return mean_i_rewards, max_i_rewards, next_obs
+
+
+
+        # train novelD
+        # mean_i_rewards = curiosity_rewards.mean()
+        # max_i_rewards = curiosity_rewards.max()
+        # self.pseudo_ucb_nets.train()
+        # _, indices = torch.sort(curiosity_rewards[:-1,:].reshape(-1))
+        # for epoch in range(args.rnd_update_epochs):  # TODO
+        #     nonzero_indices = torch.nonzero(indices[0:args.rnd_train_num * args.num_envs]).squeeze()
+        #     # Push the frontier forward,
+        #     nonzero_indices += float(args.num_envs)
+        #     # print("nonzero_indices.size() ",nonzero_indices.size())
+        #     self.pseudo_ucb_nets.train_RNDs(args, nonzero_indices, b_obs, b_actions)
+        # del curiosity_rewards, nonzero_indices
