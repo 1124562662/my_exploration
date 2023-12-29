@@ -114,6 +114,14 @@ class RNDBufferEncoder(nn.Module):
         x = x.to(self.device)
         return self.encoder(x)
 
+    @torch.no_grad()
+    def forward_NGU(self,
+                    x,  # (B, channel, dim x ,dim y)
+                    ):
+        assert len(x.shape) == 4 and x.shape[1] == 1
+        x = x.to(self.device)
+        return self.encoder.forward_hidden(x)
+
     def train_encoder(self,
                       states: torch.Tensor,  # (B,rollout, dim x, dim y)
                       actions: torch.Tensor,  # (B,rollout,

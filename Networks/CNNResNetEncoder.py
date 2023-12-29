@@ -84,8 +84,8 @@ class BaseEncoder(nn.Module):
 
     def forward_train(self, x,  # (B,C,dim x , dim y)
                       ):
-        if self.in_channels == 1 and len(x.size()) == 3:
-            x = x.unsqueeze(1)
+        assert x.shape[1] == 1 and len(x.shape) == 4, "BaseEncoder"
+
         x = self.resnet_units(x)
         x = x.flatten(start_dim=1)
         # print("resnet forward", x.size())
@@ -94,6 +94,17 @@ class BaseEncoder(nn.Module):
         x = self.mlps2(x)
         x = self.out(x)
         return x, hiddens
+
+    @torch.no_grad()
+    def forward_hidden(self,x,  # (B,C,dim x , dim y)
+                       ):
+        assert x.shape[1] == 1 and len(x.shape) == 4, "BaseEncoder"
+        x = self.resnet_units(x)
+        x = x.flatten(start_dim=1)
+        # print("resnet forward", x.size())
+        x = self.mlps1(x)
+        hiddens = self.idm_head(x)
+        return hiddens
 
 
 if __name__ == "__main__":

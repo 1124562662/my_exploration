@@ -44,9 +44,6 @@
 
   11. New experiment setting -- stochastic MonteZuma 1) observational randomness 2) dynamical randomness
 
-  12. If the RND intrinsic reward decreases too fast, the PPO agent will forget about the Q value, so the RND intrinsic reward needs to decrease slowly in
-      the on-policy setting. (mitigated by the emu of target Q net).
-
   13. Intrinsic Value(s) function should use Sum(), but not use Max() in the Bellman update?
   Value(s) = Sum_{a,r,s'}Q(s,a) = Sum_{a,r,s'}[intrinsic R + Value(s')]
 
@@ -167,11 +164,13 @@
 
   48. 如果对于trajectory使用max(reward of s_i)来作为回报呢？
 
-  49. 用多个并行的小rnd mlp的好处就是，每次只更新一个，让rnd值下降的相对更可控（sample with replacement），在不用调节learning rate等超参数的情况下，不会突然下降太快
+  49. 用多个并行的小rnd mlp的好处就是，每次只更新一个，让rnd值下降的相对更可控（sample with replacement），
+      在不用调节learning rate等超参数的情况下，不会突然下降太快
 
   50. 现在的hard exploration benchmarks都是地图类的，有没有skills类的，让agent学习技巧而不是2D地图
 
-  51. RND的用处在于，其泛化能力代替了最直接的visitation counts。这像某种hash function一样，节约了直接保存visited states的空间。
+  51. RND的用处在于，其泛化能力代替了最直接的visitation counts。
+      这像某种locality-sensitive hash function一样，节约了直接保存visited states的空间。
       RND的问题也同样在于，其泛化能力是不可控的
       对于RND来说，如果训练陷入困局，到底什么留了下来？policy不是，那就只有RND本身了。
 
@@ -179,6 +178,7 @@
 
   53. 把 BYOL 作为世界模型，然后在世界模型里直接优化找到frontiers，而不用buffer？
       或者至少不用记录到frontier的整个trajectory。
+      MCTS来找都可以（注意边界问题，就是真实世界采取某个动作a已经不会产生变化了，就应该是边界，在世界模型中也应该变成边界）
 
   54. 如果把BYOL预测长度限制为H的话，只记录H长的trajectory，此时replay buffer将有两个作用，
       一个是记录frontier来应对policy的灾难性遗忘，一个是作为BYOL world model的replay buffer避免BYOL的灾难性遗忘的。
@@ -190,8 +190,10 @@
       policy得到的reward是?
 
   55. 一点感想：go explore需要记住整个frontier，而相似的frontier可能有很多甚至无穷多个。
-      考虑不同frontiers之间的距离，在有限的buffer空间里记住尽量不同的frontiers，而用policy本身的exploration ability（pseudo ucb）去处理相似的frontiers，从而节省buffer空间。
-      transition-aware similarity 来决定diversity比NGU直接用图片更合理， 因为画面中会有一些无关的物体，或者看着截然不同的画面可能其实离得很近，
+      考虑不同frontiers之间的距离，在有限的buffer空间里记住尽量不同的frontiers，
+      而用policy本身的exploration ability（pseudo ucb）去处理相似的frontiers，从而节省buffer空间。
+      transition-aware similarity 来决定diversity比NGU直接用图片更合理，
+      因为画面中会有一些无关的物体，或者看着截然不同的画面可能其实离得很近，
       这样导致diversity度量不准确。
 
   56. 感觉现在的内禀回报太low-level了，就是在走迷宫，有没有higher level一点的呢？做看上去更“智能”的事情？
@@ -230,13 +232,15 @@
     E(s,a) = buffer prediction error of (s,a,s')
     for state s, different a might have different Var[p(s'|s,a)]
 
-  61. 调整一下，为了让agent不来回蠕动，增加RND更新频率（类似NGU的作用），但为了policy的bias小，需要MC采样，rollout len需要大
+  61. 调整一下，为了让agent不来回蠕动，增加RND更新频率（类似NGU的作用），但为了policy的bias小，
+      需要MC采样，rollout len需要大
+      也许来回蠕动是policy犹豫问题？
 
   62. 对于dones的处理 -- 对于死前最后一个状态的V值估计，不光要考虑其V值，还有rnd值（未解决）
 
-  63. 在哪里获得了rewards，policy去哪里就会被增强， rnd net就该训练哪里
+  63. 在哪里获得了rewards, policy去哪里就会被增强, rnd net就该训练哪里
       这样，每个state 的历史总rnd值 能给policy贡献的V值是个总量（怎么证明？）
-      就像能量一样，被消耗的RND值被传输耗散到哪里了？
+      就像能量一样，被消耗的RND值被传输耗散到哪里了？如果轨迹不好，可能被耗散到不好的轨迹上！
 
   64. detachment的还有一个原因是TD不通畅的问题
 
