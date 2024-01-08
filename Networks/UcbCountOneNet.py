@@ -53,7 +53,7 @@ class UcbCountOneNet(nn.Module):
 
         num_hidden = 1
         if not target:
-            num_hidden += 1
+            num_hidden += 2
 
         self.models = create_mlp(in_dim + ae_sin_size, num_hidden, hidden_units, embed_dim)
 
@@ -124,6 +124,8 @@ class UcbCountOneNet(nn.Module):
                   pseudo_ucb_target: nn.Module = None, ):
         assert len(b_obs.shape) == 3 and len(b_actions.shape) == len(actual_i_rewards.shape) == 1
         assert b_obs.shape[0] == b_actions.shape[0] == actual_i_rewards.shape[0]
+
+        actual_i_rewards[actual_i_rewards < args.clip_intrinsic_reward_min] = args.clip_intrinsic_reward_min
 
         if t_embs is None and pseudo_ucb_target is not None:
             with torch.no_grad():

@@ -12,6 +12,7 @@ import numpy as np
 from ..Buffers.RND_diversity_aware_buffer import RNDReplayBuffer
 from ..Networks.ACNetwork import ACNetwork
 from ..Networks.BufferEncoder import RNDBufferEncoder
+from ..Networks.QNetwork import QNetwork
 from ..Networks.UcbCountMultipleNets import UcbNets
 from exploration_on_policy.Networks.ByolEncoder import BYOLEncoder
 from ..utils.Multi_dim_gumbel_softmax import multi_dim_softmax
@@ -49,6 +50,9 @@ class IntrinsicAgent(nn.Module):
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
         self.action_space = envs.action_space.n
 
+        self.extrinsic_critic = QNetwork(device, self.action_space, out_size=9, in_channels=1, )  # TODO -- out_size
+        self.extrinsic_optimizer = optim.Adam(self.extrinsic_critic.parameters(), lr=learning_rate)
+
         # used for sample action
         self.I_action_gumbel_max_tau = I_action_gumbel_max_tau
         # self.obs_stats =  TorchRunningMeanStd((dim_x, dim_y), device=device,min_size=args.num_steps) # cuda
@@ -66,15 +70,16 @@ class IntrinsicAgent(nn.Module):
         self.use_only_UBC_exploration_threshold = use_only_UBC_exploration_threshold
         self.train_with_buffer_interval = args.train_with_buffer_interval
 
+        self.rnd_buffer = RNDReplayBuffer(args=args, action_num=self.action_space, dim_x=dim_x, dim_y=dim_y)
+
         # NGU related
         # self.myopic_ngu_embs = torch.zeros((args.rnd_train_freq, args.num_envs, args.buffer_encoder_emb_dim)).to(device)
         # self.ngu_top = 0
 
-
     def get_action_train(self,
                          obs_,  # (batch size,  dim x, dim y)
                          action_given,  # (batch size, )
-                          ):
+                         ):
         assert len(obs_.shape) == 3 and len(action_given.shape) == 1
         obs_ = obs_.to(self.device).to(torch.float32)
         policy, critic = self.policy_net(obs_.unsqueeze(1))  # (batch size, action_nums),  (batch size, )
@@ -121,41 +126,11 @@ class IntrinsicAgent(nn.Module):
                ubc_values_, \
                Categorical(logits=policy_og).log_prob(actions_arg)
 
-    @torch.no_grad()
-    def calculate_off_policy_gae(self,
-                                 last_obs, curiosity_rewards, args, device, log_probS_og, logprobs, int_values,
-                                 # TODO 加入dones计算
-                                 ):
-        # next_obs = torch.from_numpy(next_obs)
-        _, _, _, _, next_value_int, _, _ = self.get_action(last_obs)
-        next_value_int = next_value_int.reshape(1, -1)
-        int_advantages = torch.zeros_like(curiosity_rewards, device=device)
-        int_lastgaelam = 0
-        for t in reversed(range(args.num_steps)):
-            int_nextnonterminal = 1.0
-            importance = torch.exp(log_probS_og[t] - logprobs[t])  # (envs,)
-            importance = torch.clip(importance, max=10, min=0.001)  # (envs,)
-
-            if t == args.num_steps - 1:
-                int_nextvalues = next_value_int
-                int_nextvalues *= importance
-            else:
-                int_nextvalues = int_values[t + 1]
-
-            int_delta = curiosity_rewards[t] + args.int_gamma * int_nextvalues * int_nextnonterminal - \
-                        int_values[t]
-
-            int_advantages[t] = int_lastgaelam = (
-                    int_delta + args.int_gamma * args.gae_lambda * int_nextnonterminal * int_lastgaelam * importance
-            )
-        int_returns = int_advantages + int_values
-        return int_returns, int_advantages
-
     def rollout_step(self, args, device, dim_x, dim_y, envs,
-                     ep_info_buffer, ep_success_buffer, rb,
+                     ep_info_buffer, ep_success_buffer,
                      global_step: int,
                      next_obs,
-                     rnd_buffer: RNDReplayBuffer,
+                     # rnd_buffer: RNDReplayBuffer,
                      ):
         assert args.num_steps / args.rnd_train_freq == 0
 
@@ -178,12 +153,10 @@ class IntrinsicAgent(nn.Module):
             # train the policy with the buffer
             # and train the buffer encoder
             for _ in range(args.rnd_buffer_train_off_policy_times):
-                rnd_buffer.train_policy(epoch=args.rnd_buffer_train_off_policy_epoches,
-                                        rnd_module=self.pseudo_ucb_nets,
-                                        policy_net=self.policy_net,
-                                        policy_net_optimizer=self.optimizer,
-                                        sample_from_buffer=True)
-                rnd_buffer.train_encoder_with_buffer(int(rnd_buffer.buffer_size / 10))
+                self.rnd_buffer.train_policy(agent=self,
+                                             epoch=args.rnd_buffer_train_off_policy_epoches,
+                                             sample_from_buffer=True)
+                self.rnd_buffer.train_encoder_with_buffer(int(self.rnd_buffer.buffer_size / 10))
 
         obs = torch.zeros((args.num_steps, args.num_envs) + (dim_x, dim_y)).to(device)  # (steps, env nums, dimx,dimy)
         actions = torch.zeros((args.num_steps, args.num_envs), dtype=torch.long).to(device)
@@ -194,11 +167,11 @@ class IntrinsicAgent(nn.Module):
         rnd_rewards = torch.zeros((args.num_steps, args.num_envs)).to(device)
         dones = torch.zeros((args.num_steps, args.num_envs)).to(device)
         int_values = torch.zeros((args.num_steps, args.num_envs)).to(device)
+        ex_values = torch.zeros((args.num_steps, args.num_envs)).to(device)
         previous_intrinsic_rewards = torch.zeros(args.num_envs)  # (num envs,)
 
         next_done = torch.zeros(args.num_envs).cpu().numpy()
         self.eval()
-
         for step in range(args.num_steps):
             with torch.no_grad():
                 # get action
@@ -211,6 +184,8 @@ class IntrinsicAgent(nn.Module):
             dones[step] = torch.from_numpy(next_done).to(device)
             actions[step] = actions_arg.to(device)
             int_values[step] = int_v.flatten()
+            with torch.no_grad():
+                ex_values[step] = self.extrinsic_critic(next_obs.unsqueeze(1)).detach().flatten()
             # ubc_values_all[step] = ubc_values
             rnd_rewards[step] = rnd_intrinsic_reward
             if step > 0:
@@ -238,9 +213,6 @@ class IntrinsicAgent(nn.Module):
             extrinsic_rewards[step] = torch.from_numpy(rewards).to(device)
 
             update_info_buffer(ep_info_buffer, ep_success_buffer, infos, next_done)
-
-            rb.add(next_obs.cpu().detach().numpy(), real_next_obs.cpu().detach().numpy(), actions_arg.cpu().numpy(),
-                   rewards, next_done, infos)
             next_obs = real_next_obs
 
             if step % args.rnd_train_freq == args.rnd_train_freq - 1:
@@ -263,37 +235,99 @@ class IntrinsicAgent(nn.Module):
                 self.pseudo_ucb_nets.eval()
 
         # Add the result to the rnd buffer
-        rnd_buffer.add(obs,
-                       rnd_rewards,
-                       self.clip_intrinsic_reward_min,
-                       actions,
-                       dones,
-                       logprobs,
-                       self.pseudo_ucb_nets,
-                       self.policy_net, self.optimizer)
+        self.rnd_buffer.add(agent=self,
+                            obs=obs,
+                            rnd_values=rnd_rewards,
+                            rnd_values_min=self.clip_intrinsic_reward_min,
+                            actions=actions,
+                            rewards=extrinsic_rewards,
+                            done=dones,
+                            log_probs=logprobs,
+                            rnd_module=self.pseudo_ucb_nets,
+                            policy_net=self.policy_net, policy_net_optimizer=self.optimizer, )
+
+        mean_i_rewards, max_i_rewards = self.train_off_policy(args, next_obs, curiosity_rewards, device,
+                                                              log_probS_og, logprobs, int_values,
+                                                              obs, dim_x, dim_y, actions,
+                                                              dones, ex_values, ex_rewards=extrinsic_rewards,
+                                                              train_ext=True)
+        return mean_i_rewards, max_i_rewards, next_obs
+
+    ####################################################################################################################
+    def train_off_policy(self, args,
+                         last_obs,  # (batch size, dim x, dim y)
+                         curiosity_rewards,  # (rollout len, batch size)
+                         device,
+                         log_probS_og,  # (rollout len, batch size)
+                         logprobs,  # (rollout len, batch size)
+                         int_values,  # (rollout len, batch size)
+                         obs,  # (rollout len, batch size, dimx , dim y)
+                         dim_x, dim_y,
+                         actions,  # (rollout len, batch size)
+                         dones,  # (rollout len, batch size)
+                         ex_values,  # (rollout len, batch size)
+                         ex_rewards,  # (rollout len, batch size)
+                         train_ext: bool,
+                         ):
 
         # bootstrap value if not done
         # TODO -- 注意！ 这里和 RND 一样没有考虑 dones，没有 episode
-        int_returns, int_advantages = self.calculate_off_policy_gae(next_obs, curiosity_rewards, args, device,
-                                                                    log_probS_og, logprobs, int_values)
+        _, _, _, _, next_value_int, _, _ = self.get_action(last_obs)
+        next_value_int = next_value_int.reshape(1, -1)
+        int_advantages = torch.zeros_like(curiosity_rewards, device=device)
+        int_lastgaelam = 0
+        next_value_ex = self.extrinsic_critic(last_obs.unsqueeze(1))
+        next_value_ex = next_value_ex.reshape(1, -1)
+        ex_advantages = torch.zeros_like(curiosity_rewards, device=device)
+        ex_lastgaelam = 0
+
+        for t in reversed(range(args.num_steps)):
+            importance = torch.exp(log_probS_og[t] - logprobs[t])  # (envs,)
+            importance = torch.clip(importance, max=3, min=0)  # (envs,)
+            if t == args.num_steps - 1:
+                nextnonterminal = 1
+                int_nextvalues = next_value_int
+
+                ex_nextnonterminal = 1
+                ex_nextvalues = next_value_ex
+            else:
+                nextnonterminal = 1
+                int_nextvalues = int_values[t + 1]
+
+                ex_nextnonterminal = 1.0 - dones[t + 1]
+                ex_nextvalues = ex_values[t + 1]
+
+            int_delta = curiosity_rewards[t] + args.int_gamma * int_nextvalues * nextnonterminal - \
+                        int_values[t]
+            int_advantages[
+                t] = int_lastgaelam = (
+                                              int_delta + args.int_gamma * args.gae_lambda * nextnonterminal * int_lastgaelam) * importance
+
+            ext_delta = ex_rewards[t] + args.ext_gamma * ex_nextvalues * ex_nextnonterminal - ex_values[t]
+            ex_advantages[t] = ex_lastgaelam = (
+                                                       ext_delta + args.ext_gamma * args.gae_lambda * ex_nextnonterminal * ex_lastgaelam) * importance
+
+        int_returns = int_advantages + int_values
+
+        ex_returns = ex_advantages + ex_values
+        advantages = 0.5 * ex_advantages + 1 * int_advantages  # TODO
 
         mean_i_rewards = curiosity_rewards.mean()
         max_i_rewards = curiosity_rewards.max()
-        del int_values, extrinsic_rewards, logprobs, curiosity_rewards
+        del int_values, ex_rewards, logprobs, curiosity_rewards
 
         # flatten the batch
-        b_obs = obs.reshape((-1,) + (dim_x, dim_y))
-        b_log_probS_og = log_probS_og.reshape(-1)
-        b_actions = actions.reshape(-1)
-        b_advantages = int_advantages.reshape(-1)
-        b_int_returns = int_returns.reshape(-1)
+        b_obs = obs.reshape((-1,) + (dim_x, dim_y)).detach()
+        b_log_probS_og = log_probS_og.reshape(-1).detach()
+        b_actions = actions.reshape(-1).detach()
+        b_advantages = advantages.reshape(-1).detach()
+        b_int_returns = int_returns.reshape(-1).detach()
         b_size = b_obs.shape[0]
         b_inds = np.arange(b_size)
 
         # update stats
         # self.obs_stats.update(b_obs)
 
-        # TODO PPO 也要根据 off policy修改
         self.policy_net.train()
         clipfracs = []
         for epoch in range(args.update_epochs):
@@ -330,6 +364,7 @@ class IntrinsicAgent(nn.Module):
                 v_loss = ((new_int_values - b_int_returns[mb_inds]) ** 2).mean()
                 entropy_loss = entropy.mean()
                 loss = pg_loss - args.ent_coef * entropy_loss + v_loss * args.vf_coef
+
                 self.optimizer.zero_grad()
                 loss.backward()
                 if args.max_grad_norm:
@@ -343,17 +378,24 @@ class IntrinsicAgent(nn.Module):
                 if approx_kl > args.target_kl:
                     break
 
-        return mean_i_rewards, max_i_rewards, next_obs
+        del b_log_probS_og, b_actions, b_advantages, b_int_returns
 
-        # train novelD
-        # mean_i_rewards = curiosity_rewards.mean()
-        # max_i_rewards = curiosity_rewards.max()
-        # self.pseudo_ucb_nets.train()
-        # _, indices = torch.sort(curiosity_rewards[:-1,:].reshape(-1))
-        # for epoch in range(args.rnd_update_epochs):  # TODO
-        #     nonzero_indices = torch.nonzero(indices[0:args.rnd_train_num * args.num_envs]).squeeze()
-        #     # Push the frontier forward,
-        #     nonzero_indices += float(args.num_envs)
-        #     # print("nonzero_indices.size() ",nonzero_indices.size())
-        #     self.pseudo_ucb_nets.train_RNDs(args, nonzero_indices, b_obs, b_actions)
-        # del curiosity_rewards, nonzero_indices
+        if train_ext:
+            b_ex_returns = ex_returns.reshape(-1).detach()
+            self.extrinsic_critic.train()
+            for epoch in range(args.update_epochs):
+                np.random.shuffle(b_inds)
+                for start in range(0, b_size, args.minibatch_size):
+                    end = start + args.minibatch_size
+                    end = end if end < b_size else b_size
+                    if start >= end:
+                        break
+                    mb_inds = b_inds[start:end]
+                    new_ex_values = self.extrinsic_critic(b_obs[mb_inds])
+                    new_ex_values = new_ex_values.view(-1)
+                    v_loss = ((new_ex_values - b_ex_returns[mb_inds]) ** 2).mean()
+                    self.extrinsic_optimizer.zero_grad()
+                    v_loss.backward()
+                    self.extrinsic_optimizer.step()
+
+        return mean_i_rewards, max_i_rewards

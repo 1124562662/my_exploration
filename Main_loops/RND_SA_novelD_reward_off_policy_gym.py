@@ -171,7 +171,6 @@ def parse_args():
                         help=" ")
     parser.add_argument("--train_with_buffer_interval", type=int, default=100,
                         help=" ")
-
     parser.add_argument("--rnd_buffer_train_off_policy_times", type=int, default=5,
                         help=" ")
     parser.add_argument("--rnd_buffer_train_off_policy_epoches", type=int, default=5,
@@ -298,17 +297,17 @@ poetry run pip install "stable_baselines3==2.0.0a1" "gymnasium[atari,accept-rom-
                                   learning_rate=args.e_learning_rate,
                                   E_action_gumbel_max_tau=args.E_action_gumbel_max_tau)
 
-        rb = ReplayBuffer(
-            args.buffer_size,
-            envs.observation_space,
-            envs.action_space,
-            device,
-            dim_x=dim_x,
-            dim_y=dim_y,
-            optimize_memory_usage=True,
-            handle_timeout_termination=False,
-            n_envs=args.num_envs,
-        )
+        # rb = ReplayBuffer(
+        #     args.buffer_size,
+        #     envs.observation_space,
+        #     envs.action_space,
+        #     device,
+        #     dim_x=dim_x,
+        #     dim_y=dim_y,
+        #     optimize_memory_usage=True,
+        #     handle_timeout_termination=False,
+        #     n_envs=args.num_envs,
+        # )
 
     from collections import deque
 
@@ -328,15 +327,15 @@ poetry run pip install "stable_baselines3==2.0.0a1" "gymnasium[atari,accept-rom-
         epsilon = linear_schedule(args.start_e, args.end_e, args.exploration_fraction * args.total_timesteps,
                                   global_step)
         if args.use_e_agent and (global_step % 100) / 100 > epsilon:
-            current_agent = e_agent
-            e_agent.rollout_step(args, device, dim_x, dim_y, envs, ep_info_buffer, ep_success_buffer, rb, global_step,
-                                 next_obs)
+            pass
+            # current_agent = e_agent
+            # e_agent.rollout_step(args, device, dim_x, dim_y, envs, ep_info_buffer, ep_success_buffer, rb, global_step,
+            #                      next_obs)
         else:
-
             current_agent = i_agent
             mean_i_rewards, max_i_rewards, next_obs = i_agent.rollout_step(args, device, dim_x, dim_y, envs,
                                                                            ep_info_buffer,
-                                                                           ep_success_buffer, rb, global_step, next_obs)
+                                                                           ep_success_buffer, global_step, next_obs)
             global_i_step += 1
             if global_step % args.log_interval == 0:
                 print("global_step", global_step, ",   total_env_step_call", total_env_step_call, ",   I_rew",

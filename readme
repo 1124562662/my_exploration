@@ -212,6 +212,7 @@
       encoder 的目标的静态的，而policy学习的目标是动态的。
 
   59. BYOL 的reward 到底是什么，如果是disagreement的话，就有‘虚假的相同泛化bias’问题
+      虚假的相同泛化bias 很有可能出现，因为几个models很有可能预测一个相同的值 -- 所有见过的S_{t+1} states的均值
 
   60. 什么是empowerment？
     对于 state s 来说，the states diversity following state s！
@@ -243,6 +244,24 @@
       就像能量一样，被消耗的RND值被传输耗散到哪里了？如果轨迹不好，可能被耗散到不好的轨迹上！
 
   64. detachment的还有一个原因是TD不通畅的问题
+      再加上i reward 在不停的变化，这让TD变得特别复杂。先不考虑灾难性遗忘，再考虑灾难性遗忘。
+
+      还有，i(s)可能没有被传回到s0中，因为TD或者GAE不够长的原因，变成stale的值，只回传到 s2。
+      如果agent之后再不去到s2，那么便再没有机会获取到I(s)了。
+
+  65. state s 产生的 rnd 量是逐次递减的 { i_1(s), i_2(s), i_3(s), i_4(s), .... },
+      如果这些值在同一个traj中，会累积叠加（类似于来回蠕动的情况）；
+      如果在不同traj中，则会互相消耗。
+      这就导致了不公平，有些状态可能
+      好像也没啥关系。。。。
+
+
+
+  66. 马毅的Maximal Coding Rate Reduction 作为 compression gain
+
+  67. 除了VIME，life-long i-reward 因为更新不及时的问题（batch training），
+      都会让agent学会一见到大reward就来回蠕动的skill，
+      此时只有结合非参数方法，存储{(s_i,a_i)}俩避免相同的蠕动动作
 
 
 
