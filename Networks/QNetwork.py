@@ -106,7 +106,7 @@ class QNetwork(nn.Module):
         super().__init__()
         # print(dir(env))
         self.device = device
-        self.last_dim =last_dim #env.action_space.n
+        self.last_dim =last_dim #1, not env.action_space.n
         self.in_channels = in_channels
         self.resnet_units = nn.Sequential(
             ResnetUnit(in_channels, 4),
@@ -123,6 +123,6 @@ class QNetwork(nn.Module):
         x = x.to(torch.float32).to(self.device)
         x = self.resnet_units(x)
         x = x.flatten(start_dim=1)
-        # print("resnet forward", x.size())
+        # print("ex q resnet forward", x.size())
         x = self.out(x)
         return x # (B, out emb size)

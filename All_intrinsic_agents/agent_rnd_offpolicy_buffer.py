@@ -44,13 +44,13 @@ class IntrinsicAgent(nn.Module):
         self.device = device
         self.clip_intrinsic_reward_min = args.clip_intrinsic_reward_min
 
-        byol_encoder = BYOLEncoder(in_channels=1, out_size=600, emb_dim=ac_emb_dim).to(device)  # output size 192
+        byol_encoder = BYOLEncoder(in_channels=1, out_size= 192, emb_dim=ac_emb_dim).to(device)  # output size 192
         self.policy_net = ACNetwork(device, action_space=envs.action_space.n, byol_encoder=byol_encoder,
-                                    indim=ac_emb_dim).to(device)  # TODO 加一个 extrinsic reward 的 head？
+                                    indim=ac_emb_dim).to(device)
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
         self.action_space = envs.action_space.n
 
-        self.extrinsic_critic = QNetwork(device, self.action_space, out_size=9, in_channels=1, )  # TODO -- out_size
+        self.extrinsic_critic = QNetwork(device, last_dim=1, out_size=560, in_channels=1, ).to(device)  # TODO -- out_size
         self.extrinsic_optimizer = optim.Adam(self.extrinsic_critic.parameters(), lr=learning_rate)
 
         # used for sample action
@@ -83,7 +83,7 @@ class IntrinsicAgent(nn.Module):
         assert len(obs_.shape) == 3 and len(action_given.shape) == 1
         obs_ = obs_.to(self.device).to(torch.float32)
         policy, critic = self.policy_net(obs_.unsqueeze(1))  # (batch size, action_nums),  (batch size, )
-        assert policy.size(-1) == self.actions_num, "Categorical "
+        assert policy.size(-1) == self.action_space, "Categorical "
         probs = Categorical(logits=policy)
         return probs.log_prob(action_given), \
                probs.entropy(), \
@@ -132,7 +132,7 @@ class IntrinsicAgent(nn.Module):
                      next_obs,
                      # rnd_buffer: RNDReplayBuffer,
                      ):
-        assert args.num_steps / args.rnd_train_freq == 0
+        assert args.num_steps % args.rnd_train_freq == 0
 
         if global_step == 0:
             print("Start to initialize observation normalization parameter.....")
@@ -149,7 +149,7 @@ class IntrinsicAgent(nn.Module):
             self.ubc_statistics.count = args.num_steps
             print("End to initialize...")
 
-        elif global_step / self.train_with_buffer_interval == 0:
+        elif global_step / self.train_with_buffer_interval == 0 and self.rnd_buffer.buffer_ah.die:
             # train the policy with the buffer
             # and train the buffer encoder
             for _ in range(args.rnd_buffer_train_off_policy_times):
@@ -221,9 +221,9 @@ class IntrinsicAgent(nn.Module):
                 b_actions_r = actions[step - args.rnd_train_freq + 1:step + 1].reshape(-1)
                 b_actual_r = curiosity_rewards[step - args.rnd_train_freq + 1:step + 1].reshape(-1)
                 b_size = b_obs_r.shape[0]
-                b_inds_r = np.arange()
-                for epoch in range(args.rnd_update_epochs):
-                    np.random.shuffle(args.rnd_train_freq)
+                b_inds_r = np.arange(b_size)
+                for epoch in range(0,args.rnd_update_epochs):
+                    np.random.shuffle(b_inds_r)
                     for start in range(0, b_size, args.minibatch_size):
                         end = start + args.minibatch_size
                         end = end if end < b_size else b_size
@@ -303,9 +303,9 @@ class IntrinsicAgent(nn.Module):
                 t] = int_lastgaelam = (
                                               int_delta + args.int_gamma * args.gae_lambda * nextnonterminal * int_lastgaelam) * importance
 
-            ext_delta = ex_rewards[t] + args.ext_gamma * ex_nextvalues * ex_nextnonterminal - ex_values[t]
+            ext_delta = ex_rewards[t] + args.gamma * ex_nextvalues * ex_nextnonterminal - ex_values[t]
             ex_advantages[t] = ex_lastgaelam = (
-                                                       ext_delta + args.ext_gamma * args.gae_lambda * ex_nextnonterminal * ex_lastgaelam) * importance
+                                                       ext_delta + args.gamma * args.gae_lambda * ex_nextnonterminal * ex_lastgaelam) * importance
 
         int_returns = int_advantages + int_values
 
@@ -391,7 +391,7 @@ class IntrinsicAgent(nn.Module):
                     if start >= end:
                         break
                     mb_inds = b_inds[start:end]
-                    new_ex_values = self.extrinsic_critic(b_obs[mb_inds])
+                    new_ex_values = self.extrinsic_critic(b_obs[mb_inds].unsqueeze(1))
                     new_ex_values = new_ex_values.view(-1)
                     v_loss = ((new_ex_values - b_ex_returns[mb_inds]) ** 2).mean()
                     self.extrinsic_optimizer.zero_grad()

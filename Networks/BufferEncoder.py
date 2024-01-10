@@ -91,7 +91,7 @@ class RNDBufferEncoder(nn.Module):
         self.device = device
         self.emb_dim = emb_dim
         self.distance_p = distance_p
-        self.encoder = BaseEncoder(in_channels=1, action_num=action_num, out_size=32,  # 192
+        self.encoder = BaseEncoder(in_channels=1, action_num=action_num, out_size=192,  # 32
                                    emb_dim=emb_dim).to(device)  # TODO 处理下 BN问题，除非大批量训练，不然不用 BN
         self.encoder_optim = optim.Adam(self.encoder.parameters(), lr=encoder_learning_rate)
         # TODO add continual learning methods
@@ -205,8 +205,8 @@ class RNDBufferEncoder(nn.Module):
                and view_a.shape[1] == view_b.shape[1] == actions.shape[1]
 
         mb_size, mini_rollout, dim_x, dim_y = view_a.shape
-        view_a = view_a.reshape(-1, dim_x, dim_y)
-        view_b = view_b.reshape(-1, dim_x, dim_y)
+        view_a = view_a.reshape(-1, 1, dim_x, dim_y)
+        view_b = view_b.reshape(-1, 1, dim_x, dim_y)
 
         pos_a, action_emb_a = self.encoder.forward_train(
             view_a)  # (batch * mini rollout, emb),(batch * mini rollout, emb)

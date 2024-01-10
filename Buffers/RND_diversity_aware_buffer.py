@@ -43,7 +43,7 @@ from stable_baselines3.common.type_aliases import (
 from stable_baselines3.common.utils import get_device
 from stable_baselines3.common.vec_env import VecNormalize
 
-from exploration_on_policy.All_intrinsic_agents.agent_rnd_offpolicy_buffer import IntrinsicAgent
+
 from exploration_on_policy.Networks.ByolEncoder import BYOLEncoder
 from exploration_on_policy.Networks.ACNetwork import ACNetwork
 from exploration_on_policy.Networks.BufferEncoder import RNDBufferEncoder
@@ -177,7 +177,7 @@ class RNDReplayBuffer:
 
     def add(
             self,
-            agent: IntrinsicAgent,
+            agent: nn.Module, # from exploration_on_policy.All_intrinsic_agents.agent_rnd_offpolicy_buffer import IntrinsicAgent
             obs: torch.Tensor,  # (rollout len, envs, dim x, dim y)
             rnd_values: torch.Tensor,  # (rollout len, envs) calcualted during the training of RND
             rnd_values_min: float,
@@ -226,26 +226,33 @@ class RNDReplayBuffer:
                 print("buffer full, calculating the frontier info")
                 # calculate all the info about the buffer
                 # use the one with the largetst
-                emb = None
-                for i, obv_i in enumerate(self.observations):
-                    rnd_v = rnd_module(obv_i).mean(1)  # (traj len,)
-                    r_max, r_index = torch.max(rnd_v, dim=0)
-                    self.frontier[i] = obv_i[r_index].cpu().detach().clone()
-                    self.frontier_idx[i] = r_index
-                    self.f_novelties[i] = r_max
-                    emb = self.b_encoder(obv_i.unsqueeze(1)).mean(0) if emb is None else self.b_encoder(
-                        obv_i.unsqueeze(1)).mean(0) + emb
-                emb /= self.buffer_size
-                self.b_encoder.set_center(emb.to(self.b_encoder.device))
-                diversities = self.b_encoder.get_diversity(self.frontier,
-                                                           self.frontier,
-                                                           tau=2,
-                                                           )  # ( frontier size, frontier size)
-                diversities.fill_diagonal_(float('inf'))
-                diversities, d_indices = torch.min(diversities, dim=1)  # (frontier size,), (frontier size,)
-                self.f_novelty_diversity = (
-                        diversities.cpu() * self.f_novelties).cpu().detach().clone()  # (frontier size,)
-                self.dependency_indices = d_indices.to(torch.long).cpu().detach().clone()  # (frontier size,)
+                with torch.no_grad():
+                    emb = None
+                    for i, obv_i in enumerate(self.observations):
+                        r_max, r_index = -1,-1
+                        for j in range(obv_i.shape[0]):
+                            rnd_v = rnd_module(obv_i[j].unsqueeze(0)).mean(1)  # (1,)
+                            if rnd_v > r_max:
+                                r_max = rnd_v
+                                r_index = j
+                        # r_max, r_index = torch.max(rnd_v, dim=0)
+                        self.frontier[i] = obv_i[r_index].cpu().detach().clone()
+                        self.frontier_idx[i] = r_index
+                        self.f_novelties[i] = r_max
+                        emb = self.b_encoder(obv_i.unsqueeze(1)).mean(0).detach() if emb is None else self.b_encoder(
+                            obv_i.unsqueeze(1)).mean(0).detach() + emb
+                    emb /= self.buffer_size
+                    self.b_encoder.set_center(emb.to(self.b_encoder.device))
+                    #TODO 显存太多占用
+                    diversities = self.b_encoder.get_diversity(self.frontier,
+                                                               self.frontier,
+                                                               tau=2,
+                                                               )  # ( frontier size, frontier size)
+                    diversities.fill_diagonal_(float('inf'))
+                    diversities, d_indices = torch.min(diversities, dim=1)  # (frontier size,), (frontier size,)
+                    self.f_novelty_diversity = (
+                            diversities.cpu() * self.f_novelties).cpu().detach().clone()  # (frontier size,)
+                    self.dependency_indices = d_indices.to(torch.long).cpu().detach().clone()  # (frontier size,)
 
         # add 时候整块加进来，
         # 缓存前n块。
@@ -367,7 +374,7 @@ class RNDReplayBuffer:
                s_rewards
 
     def train_policy(self,
-                     agent:IntrinsicAgent,
+                     agent:nn.Module, #from exploration_on_policy.All_intrinsic_agents.agent_rnd_offpolicy_buffer import IntrinsicAgent
                      epoch: int,
                      sample_from_buffer: bool = True,
                      batch_size: int = None,

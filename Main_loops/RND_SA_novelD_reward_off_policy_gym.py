@@ -113,7 +113,7 @@ def parse_args():
     parser.add_argument("--rnd-train-freq", type=int, default=12,
                         help=" ")
 
-    parser.add_argument("--gamma", type=float, default=0.999,
+    parser.add_argument("--gamma", type=float, default=0.95,
                         help="the discount factor gamma")
     parser.add_argument("--gae-lambda", type=float, default=0.95,
                         help="the lambda for the general advantage estimation")
@@ -157,26 +157,24 @@ def parse_args():
     parser.add_argument("--use_only_UBC_exploration_threshold", type=float, default= 0.3,
                         help=" ")
     # buffer related
-    parser.add_argument("--rnd_buffer_size", type=int, default=1000,
+    parser.add_argument("--rnd_buffer_size", type=int, default=3,
                         help=" ")
     parser.add_argument("--ema_beta", type=float, default=0.3,
                         help=" ")
-    parser.add_argument("--initial_traj_len_times", type=int, default=3,
+    parser.add_argument("--initial_traj_len_times", type=int, default=2,
                         help=" ")
     parser.add_argument("--buffer_encoder_emb_dim", type=int, default=100,
                         help=" ")
     parser.add_argument("--encoder_learning_rate", type=float, default=0.001,
                         help=" ")
-    parser.add_argument("--initial_encoder_train_epoches", type=int, default=400,
+    parser.add_argument("--initial_encoder_train_epoches", type=int, default=4,
                         help=" ")
-    parser.add_argument("--train_with_buffer_interval", type=int, default=100,
+    parser.add_argument("--train_with_buffer_interval", type=int, default=3,
                         help=" ")
     parser.add_argument("--rnd_buffer_train_off_policy_times", type=int, default=5,
                         help=" ")
     parser.add_argument("--rnd_buffer_train_off_policy_epoches", type=int, default=5,
                         help=" ")
-
-
 
     args = parser.parse_args()
     args.batch_size = int(args.num_envs * args.num_steps)
@@ -263,18 +261,6 @@ poetry run pip install "stable_baselines3==2.0.0a1" "gymnasium[atari,accept-rom-
 
     dim_x = 70
     dim_y = 53
-    rnd_buffer = RNDReplayBuffer(args,
-                                 args.rnd_buffer_size,
-                                 envs.action_space.n,
-                                 args.ema_beta,
-                                 dim_x, dim_y,
-                                 args.num_envs,
-                                 args.initial_traj_len_times,
-                                 args.num_steps,
-                                 args.buffer_encoder_emb_dim,
-                                 args.encoder_learning_rate,
-                                 store_device="cpu", cuda_device="cuda:0",
-                                 initial_encoder_train_epoches=args.initial_encoder_train_epoches)
 
     i_agent = IntrinsicAgent(envs=envs,
                              args=args,
