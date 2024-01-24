@@ -1,0 +1,507 @@
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2248, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2318, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0009, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2274, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2207, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0006, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2317, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2127, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0007, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2345, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2056, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0005, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2346, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1837, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0006, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2377, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1714, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0021, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2413, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2007, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0023, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2439, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1817, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0006, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2487, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2353, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0005, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2515, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2423, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0019, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2512, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2181, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0015, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0015, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2191, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0005, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2587, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2650, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(8.2650e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2619, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2748, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1879, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0001, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2670, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1936, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(1.2307e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2556, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0330, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(1.4002e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(1.4002e-05, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0345, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2602, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0490, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2627, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0465, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(1.3503e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2657, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0588, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(9.9172e-06, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(9.9172e-06, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0567, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(6.4822e-06, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(6.4822e-06, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1350, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(4.5127e-06, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(4.5127e-06, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1376, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(1.5742e-06, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2757, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0640, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(1.8173e-06, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(1.8173e-06, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0624, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(8.1195e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2799, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0329, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(5.6769e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2824, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0288, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(1.9193e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2848, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1341, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.3002e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2873, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1252, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2896, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0581, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2922, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0580, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1086, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2814, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1074, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2822, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1967, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2846, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1901, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0006, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2868, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0562, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0007, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2893, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0549, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0006, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2923, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0458, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0005, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2951, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0491, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(3.2236e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.2987, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1146, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(3.9291e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3015, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1020, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0001, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3042, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0829, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3073, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0803, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0008, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0008, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1853, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0006, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3131, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1802, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3161, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0757, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(8.0912e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3195, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0761, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3057, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2401, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3091, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2233, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3127, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1295, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(8.8602e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3166, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1220, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3202, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2279, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3240, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2245, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0001, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3281, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2051, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(3.8877e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3320, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1987, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(9.5491e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3360, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2520, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(8.0049e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3400, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2694, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(9.4571e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3441, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2587, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0001, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0001, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2430, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(4.1025e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(4.1025e-05, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1650, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(6.2438e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3547, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1693, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(1.7654e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3580, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2410, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.0567e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(2.0567e-05, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2488, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(1.9835e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(1.9835e-05, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0704, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.0477e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3490, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0696, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(8.0596e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3520, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0643, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(6.3164e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3551, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0602, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(3.0133e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3583, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0617, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(3.0023e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3618, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0616, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.4282e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3657, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0502, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.2846e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3697, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0522, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.1720e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3739, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0318, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.0956e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3782, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0335, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3824, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0898, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3869, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0866, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0001, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3957, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(8.1769e-05, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.5632e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4004, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1117, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.9085e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(2.9085e-05, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1111, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1265, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3896, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1288, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.3942, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0792, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0009, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0009, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0833, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.4708e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4043, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0646, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.9420e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4084, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0601, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0019, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4100, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0991, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0013, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0013, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0969, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0001, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4212, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0134, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(5.2539e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4259, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0127, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4300, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2366, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4354, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.2298, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0001, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4412, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0786, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(4.7827e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4469, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0808, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(9.2809e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4528, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1201, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0001, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4589, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1168, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4423, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0500, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4490, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0466, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0001, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4559, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1565, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4629, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1588, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0001, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4704, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0681, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.1375e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4783, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0650, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4862, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0930, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.4946, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0927, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5032, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0984, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5122, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0944, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0009, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5212, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1488, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0010, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5307, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1456, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0014, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5380, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1040, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0007, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5493, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1010, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0005, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5611, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0856, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5723, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0870, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(3.1103e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5575, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0539, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(2.7640e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5696, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0529, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0013, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5810, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0482, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0011, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.5941, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0538, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0007, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.6077, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0547, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0002, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.6219, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0505, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0009, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.6350, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1075, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0010, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0010, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.1045, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0007, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.6496, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0509, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0007, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0007, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0508, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(4.2413e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.6540, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0647, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(4.2036e-05, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.6545, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0609, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0003, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.6542, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0746, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(0.0004, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0718, device='cuda:0', grad_fn=<NllLossBackward0>)
+
+loss zzzzz   tensor(0.0007, device='cuda:0', grad_fn=<MulBackward0>)
+loss 00000   tensor(-0.6538, device='cuda:0', grad_fn=<MulBackward0>)
+losss22       tensor(0.0321, device='cuda:0', grad_fn=<NllLossBackward0>)

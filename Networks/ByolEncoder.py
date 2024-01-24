@@ -8,7 +8,7 @@ from torch.optim import Adam
 from torchvision.models.resnet import conv3x3
 import torch.nn.functional as F
 
-
+magic_num = math.sqrt(2)/2
 class BasicBlock(nn.Module):
     expansion: int = 1
 
@@ -51,7 +51,7 @@ class BasicBlock(nn.Module):
         if self.downsample is not None:
             identity = self.downsample(x)
 
-        out += identity
+        out =magic_num*out+ magic_num*identity
         out = self.Lrelu(out)
 
         return out

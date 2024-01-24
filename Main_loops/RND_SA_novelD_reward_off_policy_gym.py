@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 import random
 import statistics
@@ -28,7 +29,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp-name", type=str, default=os.path.basename(__file__).rstrip(".py"),
                         help="the name of this experiment")
-    parser.add_argument("--seed", type=int, default=1,
+    parser.add_argument("--seed", type=int, default=2,
                         help="seed of the experiment")
     parser.add_argument("--torch-deterministic", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
                         help="if toggled, `torch.backends.cudnn.deterministic=False`")
@@ -108,7 +109,7 @@ def parse_args():
 
     parser.add_argument("--render-human", type=bool, default=True,
                         help=" ")
-    parser.add_argument("--num-steps", type=int, default=132,
+    parser.add_argument("--num-steps", type=int, default=240,
                         help="the number of steps to run in each environment per policy rollout")
     parser.add_argument("--rnd-train-freq", type=int, default=12,
                         help=" ")
@@ -140,7 +141,7 @@ def parse_args():
 
     parser.add_argument("--net_num", type=int, default=3,
                         help=" ")
-    parser.add_argument("--train_net_num", type=int, default=1,
+    parser.add_argument("--train_net_num", type=int, default=3,
                         help="")
     parser.add_argument("--use_e_agent", type=bool, default=False,
                         help=" ")
@@ -148,13 +149,14 @@ def parse_args():
                         help=" ")
     parser.add_argument("--rnd_update_epochs", type=int, default=1,
                         help=" ")
-    parser.add_argument("--novelD-alpha", type=float, default=0.7,
+    parser.add_argument("--novelD-alpha", type=float, default=0.5,
                         help="novelD-alpha if positive, do not use novelD if zero")
+
     parser.add_argument("--extrinsic_rewards_for_i_agent", type=float, default=1,
                         help=" ")
-    parser.add_argument("--use-contextual-bandit-UBC", type=bool, default=False,
-                        help=" ")  # TODO
-    parser.add_argument("--use_only_UBC_exploration_threshold", type=float, default= 0.3,
+    # parser.add_argument("--use-contextual-bandit-UBC", type=bool, default=False,
+    #                     help=" ")
+    parser.add_argument("--use_only_UBC_exploration_threshold", type=float, default=0.3,
                         help=" ")
     # buffer related
     parser.add_argument("--rnd_buffer_size", type=int, default=3,
@@ -167,17 +169,18 @@ def parse_args():
                         help=" ")
     parser.add_argument("--encoder_learning_rate", type=float, default=0.001,
                         help=" ")
-    parser.add_argument("--initial_encoder_train_epoches", type=int, default=4,
+    parser.add_argument("--initial_encoder_train_epoches", type=int, default=10000,
                         help=" ")
     parser.add_argument("--train_with_buffer_interval", type=int, default=3,
                         help=" ")
-    parser.add_argument("--rnd_buffer_train_off_policy_times", type=int, default=5,
+    parser.add_argument("--rnd_buffer_train_off_policy_times", type=int, default=20,
                         help=" ")
     parser.add_argument("--rnd_buffer_train_off_policy_epoches", type=int, default=5,
                         help=" ")
 
     args = parser.parse_args()
     args.batch_size = int(args.num_envs * args.num_steps)
+    args.buffer_sample_bsize = int(math.floor(args.num_envs / args.initial_traj_len_times))
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
 
     return args

@@ -125,7 +125,8 @@ class UcbCountOneNet(nn.Module):
         assert len(b_obs.shape) == 3 and len(b_actions.shape) == len(actual_i_rewards.shape) == 1
         assert b_obs.shape[0] == b_actions.shape[0] == actual_i_rewards.shape[0]
 
-        actual_i_rewards[actual_i_rewards < args.clip_intrinsic_reward_min] = args.clip_intrinsic_reward_min
+        # actual_i_rewards[actual_i_rewards < args.clip_intrinsic_reward_min] = args.clip_intrinsic_reward_min
+
 
         if t_embs is None and pseudo_ucb_target is not None:
             with torch.no_grad():
@@ -134,7 +135,7 @@ class UcbCountOneNet(nn.Module):
             y_embs = self.forward_with_action_indices(b_obs[mb_inds, :, :], b_actions[mb_inds])  # (M , embeds)
             t_embs_view = t_embs[mb_inds, :]  # (M , embeds)
             loss = F.mse_loss(y_embs, t_embs_view.detach(), reduction='none').mean(1)  # (M ,
-            loss *= actual_i_rewards[mb_inds].detach()  # (M,) 在哪里获得了rewards，policy去哪里就会被增强， rnd net就该训练哪里
+            # loss *= actual_i_rewards[mb_inds].detach()  # (M,) 在哪里获得了rewards，policy去哪里就会被增强， rnd net就该训练哪里
             loss = loss.mean()
 
             self.optimizer.zero_grad()

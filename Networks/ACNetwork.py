@@ -1,5 +1,5 @@
 import argparse
-
+import math
 
 import torch
 import torch.nn as nn
@@ -7,7 +7,6 @@ import torch.optim as optim
 import torch.nn.functional as F
 
 from exploration_on_policy.Networks import ByolEncoder
-
 
 class ACNetwork(nn.Module):
     def __init__(self,device, action_space,

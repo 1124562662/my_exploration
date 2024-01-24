@@ -1,4 +1,5 @@
 import argparse
+import math
 from typing import Optional, Callable
 
 import torch
@@ -7,7 +8,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torchvision.models.resnet import conv3x3
 
-
+magic_num = math.sqrt(2)/2
 class BasicBlock(nn.Module):
     expansion: int = 1
 
@@ -50,7 +51,7 @@ class BasicBlock(nn.Module):
         if self.downsample is not None:
             identity = self.downsample(x)
 
-        out += identity
+        out = magic_num*identity + magic_num*out
         out = self.Lrelu(out)
 
         return out
@@ -80,14 +81,14 @@ class ResnetMlp(nn.Module):
         super().__init__()
         self.L = nn.Linear(num_units, num_units)
         self.activation = nn.LeakyReLU(0.1)
-        self.bn = torch.nn.BatchNorm1d(num_units)
+        # self.bn = torch.nn.BatchNorm1d(num_units)
 
     def forward(self,
                 x,  # (batch,num_units)
                 ):
         out = self.L(x)
         out = self.activation(out)
-        out = self.bn(x + out)
+        out = magic_num * x + magic_num * out
         return out
 
 def create_resnet_mlps(inp_size, num_hidden, num_units, out_size):

@@ -67,7 +67,7 @@ class UcbNets(nn.Module):
                    actual_i_rewards,  # (N,) 在哪里获得了rewards，policy去哪里就会被增强， rnd net就该训练哪里
                    train_net_num: int = 2,
                    ):
-        assert train_net_num < self.net_num, "train_net_num<self.net_num"
+        assert train_net_num <= self.net_num, "train_net_num<=self.net_num"
         assert actual_i_rewards.shape[0] == b_actions.shape[0] == b_obs.shape[0]
 
         b_obs = b_obs.to(self.device)

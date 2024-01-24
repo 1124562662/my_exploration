@@ -43,7 +43,6 @@ from stable_baselines3.common.type_aliases import (
 from stable_baselines3.common.utils import get_device
 from stable_baselines3.common.vec_env import VecNormalize
 
-
 from exploration_on_policy.Networks.ByolEncoder import BYOLEncoder
 from exploration_on_policy.Networks.ACNetwork import ACNetwork
 from exploration_on_policy.Networks.BufferEncoder import RNDBufferEncoder
@@ -124,16 +123,17 @@ class RNDReplayBuffer:
                                  device="cpu")
         self.cache_actions = torch.zeros((self.traj_len_times, self.roll_out_len, n_envs,), dtype=torch.long,
                                          device="cpu")
-        self.cache_dones = torch.zeros((self.traj_len_times, self.roll_out_len, n_envs,), dtype=torch.long, device="cpu")
+        self.cache_dones = torch.zeros((self.traj_len_times, self.roll_out_len, n_envs,), dtype=torch.long,
+                                       device="cpu")
         self.cache_log_probs = torch.zeros((self.traj_len_times, self.roll_out_len, n_envs,), dtype=torch.float,
                                            device="cpu")
         self.cache_reward = torch.zeros((self.traj_len_times, self.roll_out_len, n_envs,), dtype=torch.float,
-                                           device="cpu")
+                                        device="cpu")
         self.cache_top = 0
 
         # encoder
         self.b_encoder = RNDBufferEncoder(args.buffer_encoder_emb_dim, args.ema_beta, action_num,
-                                          args.encoder_learning_rate, device=self.cuda_device)
+                                          args.encoder_learning_rate, device=self.cuda_device).to(cuda_device)
 
         if psutil is not None:
             total_memory_usage = sys.getsizeof(self.observations) + sys.getsizeof(self.actions) + sys.getsizeof(
@@ -154,15 +154,15 @@ class RNDReplayBuffer:
     #     self.b_encoder.encoder_ema.update_moving_average()
 
     def train_encoder_with_buffer(self,
-                                  batch_size:int,
+                                  batch_size: int,
                                   ):
-        assert  0 < batch_size < self.buffer_size
+        assert 0 < batch_size < self.buffer_size
         b_inds = np.arange(self.buffer_size)
         np.random.shuffle(b_inds)
         b_inds = b_inds[batch_size:]
         for i in b_inds:
-            self.b_encoder.train_encoder(self.observations[i,:,:,:].unsqueeze(0),
-                                         self.actions[i,:].unsqueeze(0),
+            self.b_encoder.train_encoder(self.observations[i, :, :, :].unsqueeze(0),
+                                         self.actions[i, :].unsqueeze(0),
                                          )
 
     def train_encoder(self,
@@ -177,13 +177,14 @@ class RNDReplayBuffer:
 
     def add(
             self,
-            agent: nn.Module, # from exploration_on_policy.All_intrinsic_agents.agent_rnd_offpolicy_buffer import IntrinsicAgent
+            agent: nn.Module,
+            # from exploration_on_policy.All_intrinsic_agents.agent_rnd_offpolicy_buffer import IntrinsicAgent
             obs: torch.Tensor,  # (rollout len, envs, dim x, dim y)
-            rnd_values: torch.Tensor,  # (rollout len, envs) calcualted during the training of RND
+            rnd_values: torch.Tensor,  # (rollout len, envs), calcualted during the training of RND
             rnd_values_min: float,
-            actions: torch.Tensor,  # (rollout len, envs,
-            rewards: torch.Tensor,  # (rollout len, envs,
-            done: torch.Tensor,  # (rollout len, envs,
+            actions: torch.Tensor,  # (rollout len, envs)
+            rewards: torch.Tensor,  # (rollout len, envs)
+            done: torch.Tensor,  # (rollout len, envs)
             log_probs: torch.Tensor,  # (rollout len, envs)
             rnd_module: UcbNets,
             policy_net: ACNetwork = None,
@@ -191,47 +192,58 @@ class RNDReplayBuffer:
     ) -> None:
         if not self.buffer_ah.die:
             if self.buffer_ah.less_than_full():
+                print('self.buffer_ah.less_than_full()')
                 # the buffer is not yet full, so just fill in new trajectories
                 add_envs, q, w, e, r = self.buffer_ah.get_indices_and_update(obs.shape[1])
-                self.observations[q:w, e:r, :, :] = obs[:, 0:add_envs, :, :].transpose(0, 1).cpu()
-                self.actions[q:w, e:r] = actions[:, 0:add_envs].t().cpu()
-                self.dones[q:w, e:r] = done[:, 0:add_envs].t().cpu()
-                self.log_probs[q:w, e:r] = log_probs[:, 0:add_envs].t().cpu()
-                self.rewards[q:w, e:r] = rewards[:, 0:add_envs].t().cpu()
+                self.observations[q:w, e:r, :, :] = obs[:, 0:add_envs, :, :].transpose(0, 1).detach().cpu().clone()
+                self.actions[q:w, e:r] = actions[:, 0:add_envs].t().detach().cpu().clone()
+                self.dones[q:w, e:r] = done[:, 0:add_envs].t().cpu().detach().clone()
+                self.log_probs[q:w, e:r] = log_probs[:, 0:add_envs].t().detach().cpu().clone()
+                self.rewards[q:w, e:r] = rewards[:, 0:add_envs].t().detach().cpu().clone()
                 if self.buffer_ah.no_add_cache():
                     return
 
             # update cache
-            self.cache[self.cache_top] = obs.detach().cpu()
-            self.cache_dones[self.cache_top] = done.detach().cpu()
-            self.cache_actions[self.cache_top] = actions.detach().cpu()
-            self.cache_log_probs[self.cache_top] = log_probs.detach().cpu()
-            self.cache_reward[self.cache_top] = rewards.detach().cpu()
+            self.cache[self.cache_top] = obs.detach().cpu().clone()
+            self.cache_dones[self.cache_top] = done.detach().cpu().clone()
+            self.cache_actions[self.cache_top] = actions.detach().cpu().clone()
+            self.cache_log_probs[self.cache_top] = log_probs.detach().cpu().clone()
+            self.cache_reward[self.cache_top] = rewards.detach().cpu().clone()
             self.cache_top = (self.cache_top + 1) % self.traj_len_times
 
             if self.buffer_ah.adding_cache():
+                print('self.buffer_ah.adding_cache()')
                 return
 
             if self.buffer_ah.is_full():
                 self.buffer_ah.die = True
-                # train encoder
                 print("buffer full, train encoder for the first time")
+                # set center for the first time
+                with torch.no_grad():
+                    emb = None
+                    for i, obv_i in enumerate(self.observations):
+                        self.b_encoder.train()  # update the BN
+                        emb = self.b_encoder(obv_i.unsqueeze(1)).mean(0).detach() if emb is None else self.b_encoder(
+                            obv_i.unsqueeze(1)).mean(0).detach() + emb
+                    emb /= self.buffer_size
+                    self.b_encoder.set_center(emb.to(self.b_encoder.device))
+                # train encoder
                 b_inds = np.arange(self.buffer_size)
                 for ep in range(self.initial_encoder_train_epoches):
                     np.random.shuffle(b_inds)
                     for idx in range(self.buffer_size):
                         self.train_encoder(self.observations[b_inds[idx]].unsqueeze(0),
                                            self.actions[b_inds[idx]].unsqueeze(0))
-
                 print("buffer full, calculating the frontier info")
                 # calculate all the info about the buffer
                 # use the one with the largetst
                 with torch.no_grad():
                     emb = None
                     for i, obv_i in enumerate(self.observations):
-                        r_max, r_index = -1,-1
+                        r_max, r_index = -1, -1
                         for j in range(obv_i.shape[0]):
-                            rnd_v = rnd_module(obv_i[j].unsqueeze(0)).mean(1)  # (1,)
+                            rnd_v = rnd_module(obv_i[j].unsqueeze(0))  # (1, actions)
+                            rnd_v = agent.ubc_statistics.normalize_by_var(rnd_v).mean(1)  # (1,)
                             if rnd_v > r_max:
                                 r_max = rnd_v
                                 r_index = j
@@ -243,23 +255,24 @@ class RNDReplayBuffer:
                             obv_i.unsqueeze(1)).mean(0).detach() + emb
                     emb /= self.buffer_size
                     self.b_encoder.set_center(emb.to(self.b_encoder.device))
-                    #TODO 显存太多占用
-                    diversities = self.b_encoder.get_diversity(self.frontier,
-                                                               self.frontier,
-                                                               tau=2,
-                                                               )  # ( frontier size, frontier size)
+
+                    diversities = torch.zeros((self.frontier.shape[0], self.frontier.shape[0])).to(
+                        self.b_encoder.device)  # ( frontier size, frontier size)
+                    for di in range(self.frontier.shape[0]):
+                        diversities[di, :] = self.b_encoder.get_diversity(self.frontier[di, :, :],
+                                                                          self.frontier)
                     diversities.fill_diagonal_(float('inf'))
                     diversities, d_indices = torch.min(diversities, dim=1)  # (frontier size,), (frontier size,)
                     self.f_novelty_diversity = (
                             diversities.cpu() * self.f_novelties).cpu().detach().clone()  # (frontier size,)
                     self.dependency_indices = d_indices.to(torch.long).cpu().detach().clone()  # (frontier size,)
-
         # add 时候整块加进来，
         # 缓存前n块。
         # 先判断是否准入，如果最大的novelty足够了，可以就加入。
         rnd_values[rnd_values < rnd_values_min] = 0.0
         # train encoder first
-        self.train_encoder(obs.transpose(0, 1), actions.transpose(0, 1))  # add other parameters
+        self.train_encoder(obs.transpose(0, 1), actions.transpose(0, 1), intrinsic_rewards=rnd_values.transpose(0, 1),
+                           epochs=5)  # add other parameters
 
         # TODO -- add length shrinkage, within-in episode diversity
         roll_len, envs, dim_x, dim_y = obs.shape
@@ -277,7 +290,6 @@ class RNDReplayBuffer:
         f_heap = [Traj(nd_value=nd, obs_idx=f_indices[idx, :], dependent_idx=depen_idx[idx], rnd_v=f_rnd_vals[idx]) for
                   idx, nd in enumerate(novelties_diversities)]  # obs_idx is [ frontier idx, env idx]
         heapq.heapify(f_heap)
-
         _, all_min_idx = torch.topk(self.f_novelty_diversity, k=self.n_envs, largest=False)  # (n_envs,)
         n_small = [Traj(nd_value=self.f_novelty_diversity[idx],
                         obs_idx=idx,
@@ -306,30 +318,33 @@ class RNDReplayBuffer:
             # 删除掉的states 给policy重新训练一次
             if policy_net is not None and policy_net_optimizer is not None:
                 print("retrain policy by deletion...")
-                self.train_policy(agent=agent,epoch=3,
-                                  sample_from_buffer=False,
-                                  obs=self.observations[buffer_idx].to("cuda:0"),
-                                  actions=self.actions[buffer_idx].to("cuda:0"),
-                                  dones=self.dones[buffer_idx].to("cuda:0"),
-                                  logprob_og=self.log_probs[buffer_idx].to("cuda:0"),
-                                  rewards=self.rewards[buffer_idx].to("cuda:0"),
-                                  )
+                for bi in buffer_idx:
+                    self.train_policy(agent=agent, epoch=3,
+                                      sample_from_buffer=False,
+                                      obs=self.observations[bi].unsqueeze(0).to("cuda:0"),
+                                      actions=self.actions[bi].unsqueeze(0).to("cuda:0"),
+                                      dones=self.dones[bi].unsqueeze(0).to("cuda:0"),
+                                      logprob_og=self.log_probs[bi].unsqueeze(0).to("cuda:0"),
+                                      rewards=self.rewards[bi].unsqueeze(0).to("cuda:0"),
+                                      )
 
             # 同理，再训练一次
-            self.train_encoder(self.observations[buffer_idx], self.actions[buffer_idx], epochs=2)
+            self.train_encoder(self.observations[buffer_idx], self.actions[buffer_idx], epochs=5)
 
             # update the buffer
             envs_idx = torch.tensor([traj.obs_idx[1] for traj in add_li], dtype=torch.long)  # (add num,)
             tmp = [(self.cache_top - prev) % self.traj_len_times for prev in range(0, self.traj_len_times)]
             self.observations[buffer_idx] = torch.cat([self.cache[i, :, envs_idx, :, :] for i in tmp],
                                                       dim=0).transpose(0, 1).cpu()
-            self.actions[buffer_idx] = torch.cat([self.cache_actions[i, :, envs_idx] for i in tmp], dim=0).transpose(0,1).cpu()
-            self.dones[buffer_idx] = torch.cat([self.cache_dones[i, :, envs_idx] for i in tmp], dim=0).transpose(0,1).cpu()
+            self.actions[buffer_idx] = torch.cat([self.cache_actions[i, :, envs_idx] for i in tmp], dim=0).transpose(0,
+                                                                                                                     1).cpu()
+            self.dones[buffer_idx] = torch.cat([self.cache_dones[i, :, envs_idx] for i in tmp], dim=0).transpose(0,
+                                                                                                                 1).cpu()
             self.log_probs[buffer_idx] = torch.cat([self.cache_log_probs[i, :, envs_idx] for i in tmp],
                                                    dim=0).transpose(0, 1).cpu()
             self.f_novelty_diversity[buffer_idx] = torch.tensor([traj.nd_value for traj in add_li]).cpu()
             self.rewards[buffer_idx] = torch.cat([self.cache_reward[i, :, envs_idx] for i in tmp],
-                                                   dim=0).transpose(0, 1).cpu()
+                                                 dim=0).transpose(0, 1).cpu()
 
             frontier_indices = torch.tensor(
                 [traj.obs_idx[0] + self.roll_out_len * traj.obs_idx[1] for traj in add_li])
@@ -374,7 +389,8 @@ class RNDReplayBuffer:
                s_rewards
 
     def train_policy(self,
-                     agent:nn.Module, #from exploration_on_policy.All_intrinsic_agents.agent_rnd_offpolicy_buffer import IntrinsicAgent
+                     agent: nn.Module,
+                     # from exploration_on_policy.All_intrinsic_agents.agent_rnd_offpolicy_buffer import IntrinsicAgent
                      epoch: int,
                      sample_from_buffer: bool = True,
                      batch_size: int = None,
@@ -391,15 +407,19 @@ class RNDReplayBuffer:
             if sample_from_buffer:
                 _, obs, actions, dones, logprob_og, _, rewards = self.sample(batch_size,
                                                                              agent.pseudo_ucb_nets.device)  # obs (B, traj len, dim x, dim y)
+            assert len(obs.shape) == 4 and len(actions.shape) == 2 and len(dones.shape) == 2 \
+                   and len(rewards.shape) == 2 and len(logprob_og.shape) == 2
             batch_size, traj_len = actions.shape[0], actions.shape[1]
             dim_x, dim_y = obs.shape[2], obs.shape[3]
-            curiosity_rewards = agent.pseudo_ucb_nets(obs[:, 1:, :, :].reshape((-1, dim_x, dim_y))).mean(1).reshape(
-                (batch_size, traj_len - 1))  # (B,  traj_len -1)
-            curiosity_rewards = torch.cat(
-                [curiosity_rewards, torch.zeros((batch_size,)).unsqueeze(1).to(curiosity_rewards.get_device())],
-                dim=1)  # (B,  traj_len)
 
-            curiosity_rewards[:, 1:-1] = curiosity_rewards[:, 1:-1] - self.args.novelD_alpha * curiosity_rewards[:,0:-2]
+            curiosity_rewards = torch.zeros((batch_size, traj_len)).to(self.cuda_device)
+            for ti in range(traj_len):
+                cr = agent.pseudo_ucb_nets(obs[:, ti, :, :].reshape((-1, dim_x, dim_y)))  # (B, actions)
+                cr = agent.ubc_statistics.normalize_by_var(cr).mean(1)  # (B,)
+                curiosity_rewards[:, ti] = cr
+
+            curiosity_rewards[:, 1:-1] = curiosity_rewards[:, 1:-1] - self.args.novelD_alpha * curiosity_rewards[:,
+                                                                                               0:-2]
             curiosity_rewards[:, -1] = curiosity_rewards[:, -2]  # The last reward  (B,  traj_len)
             curiosity_rewards[:, 0] = curiosity_rewards[:, 1]  # The first reward  (B,  traj_len)
             curiosity_rewards[
@@ -415,25 +435,24 @@ class RNDReplayBuffer:
             p = Categorical(logits=policy)
             log_prob1 = p.log_prob(actions).clone()  # (B,traj_lens)
 
-            with torch.no_grad():
-                ex_values = agent.extrinsic_critic(obs.reshape(-1,dim_x,dim_y).unsqueeze(1)) #(B * Rollout)
-                ex_values = ex_values.reshape((batch_size,traj_len)).t() #(Rollout,B)
+            ex_values = agent.extrinsic_critic(obs.reshape(-1, dim_x, dim_y).unsqueeze(1))  # (B * Rollout)
+            ex_values = ex_values.reshape((batch_size, traj_len)).t()  # (Rollout,B)
 
-            agent.train_off_policy(args=self.args,
-                                   last_obs=obs[:, -1, :, :],
-                                   curiosity_rewards=curiosity_rewards.t(),
-                                   device=logprob_og.get_device(),
-                                   log_probS_og=logprob_og.t(),
-                                   logprobs=log_prob1.t(),
-                                   int_values=critics.t(),
-                                   obs=obs.transpose(0,1),
-                                   dim_x=dim_x, dim_y=dim_y,
-                                   actions=actions.t(),
-                                   dones=dones.t(),
-                                   ex_values=ex_values,
-                                   ex_rewards=rewards.t(),
-                                   train_ext=False
-                                   )
+        agent.train_off_policy(args=self.args,
+                               last_obs=obs[:, -1, :, :],
+                               curiosity_rewards=curiosity_rewards.t(),
+                               device=logprob_og.get_device(),
+                               log_probS_og=logprob_og.t(),
+                               logprobs=log_prob1.t(),
+                               int_values=critics.t(),
+                               obs=obs.transpose(0, 1),
+                               dim_x=dim_x, dim_y=dim_y,
+                               actions=actions.t(),
+                               dones=dones.t(),
+                               ex_values=ex_values,
+                               ex_rewards=rewards.t(),
+                               train_ext=False
+                               )
 
 # if __name__ == "__main__":
 #     buffer_size = 12

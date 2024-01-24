@@ -1,5 +1,6 @@
 import argparse
 import copy
+import math
 
 import torch
 import torch.nn as nn
@@ -44,13 +45,14 @@ class IntrinsicAgent(nn.Module):
         self.device = device
         self.clip_intrinsic_reward_min = args.clip_intrinsic_reward_min
 
-        byol_encoder = BYOLEncoder(in_channels=1, out_size= 192, emb_dim=ac_emb_dim).to(device)  # output size 192
+        byol_encoder = BYOLEncoder(in_channels=1, out_size=192, emb_dim=ac_emb_dim).to(device)  # output size 192
         self.policy_net = ACNetwork(device, action_space=envs.action_space.n, byol_encoder=byol_encoder,
                                     indim=ac_emb_dim).to(device)
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
         self.action_space = envs.action_space.n
 
-        self.extrinsic_critic = QNetwork(device, last_dim=1, out_size=560, in_channels=1, ).to(device)  # TODO -- out_size
+        self.extrinsic_critic = QNetwork(device, last_dim=1, out_size=560, in_channels=1, ).to(
+            device)
         self.extrinsic_optimizer = optim.Adam(self.extrinsic_critic.parameters(), lr=learning_rate)
 
         # used for sample action
@@ -64,8 +66,8 @@ class IntrinsicAgent(nn.Module):
                                        filter_size=filter_size, ae_sin_size=ae_sin_size, hidden_units=hidden_units).to(
             device)
 
-        self.ubc_statistics = TorchRunningMeanStd((args.num_envs, envs.action_space.n), device=device,
-                                                  min_size=args.num_steps)  # shape of (args.num_envs, action num)
+        self.ubc_statistics = TorchRunningMeanStd((envs.action_space.n,), device=device,
+                                                  min_size=args.num_steps)  # shape of (action num)
 
         self.use_only_UBC_exploration_threshold = use_only_UBC_exploration_threshold
         self.train_with_buffer_interval = args.train_with_buffer_interval
@@ -82,6 +84,8 @@ class IntrinsicAgent(nn.Module):
                          ):
         assert len(obs_.shape) == 3 and len(action_given.shape) == 1
         obs_ = obs_.to(self.device).to(torch.float32)
+        action_given = action_given.to(self.device)
+
         policy, critic = self.policy_net(obs_.unsqueeze(1))  # (batch size, action_nums),  (batch size, )
         assert policy.size(-1) == self.action_space, "Categorical "
         probs = Categorical(logits=policy)
@@ -92,6 +96,7 @@ class IntrinsicAgent(nn.Module):
     @torch.no_grad()
     def get_action(self,
                    obs_,  # (envs, dim x, dim y)
+                   global_step,
                    # rnd_enc:RNDBufferEncoder,
                    ):
 
@@ -99,7 +104,8 @@ class IntrinsicAgent(nn.Module):
         obs_ = obs_.to(self.device).to(torch.float32)
         # pseudo count of UBC
         ubc_values = self.pseudo_ucb_nets(obs_)  # (env,action_nums)
-        self.ubc_statistics.update_single(ubc_values)
+        if global_step < 6000:  # TODO 确定具体数值
+            self.ubc_statistics.update(ubc_values)
         ubc_values = self.ubc_statistics.normalize_by_var(ubc_values)
         ubc_values_ = torch.sqrt(ubc_values)  # sqrt() similar to UCB
         intrinsic_reward_ = ubc_values_.mean(dim=-1)  # (env,)
@@ -144,7 +150,7 @@ class IntrinsicAgent(nn.Module):
                 t_obs = obvs_preprocess(s, device=device)
                 # self.obs_stats.update_single(t_obs)
                 rew = self.pseudo_ucb_nets(t_obs)
-                self.ubc_statistics.update_single(rew)
+                self.ubc_statistics.update(rew)
             # self.obs_stats.count = 80
             self.ubc_statistics.count = args.num_steps
             print("End to initialize...")
@@ -155,11 +161,14 @@ class IntrinsicAgent(nn.Module):
             for _ in range(args.rnd_buffer_train_off_policy_times):
                 self.rnd_buffer.train_policy(agent=self,
                                              epoch=args.rnd_buffer_train_off_policy_epoches,
-                                             sample_from_buffer=True)
+                                             sample_from_buffer=True,
+                                             batch_size=args.buffer_sample_bsize)
                 self.rnd_buffer.train_encoder_with_buffer(int(self.rnd_buffer.buffer_size / 10))
 
-        obs = torch.zeros((args.num_steps, args.num_envs) + (dim_x, dim_y)).to(device)  # (steps, env nums, dimx,dimy)
-        actions = torch.zeros((args.num_steps, args.num_envs), dtype=torch.long).to(device)
+        # stored in CPU！！！
+        obs = torch.zeros((args.num_steps, args.num_envs) + (dim_x, dim_y)).to("cpu")  # (steps, env nums, dimx,dimy)
+        actions = torch.zeros((args.num_steps, args.num_envs), dtype=torch.long).to("cpu")
+        # stored in GPU
         extrinsic_rewards = torch.zeros((args.num_steps, args.num_envs)).to(device)
         logprobs = torch.zeros((args.num_steps, args.num_envs)).to(device)
         log_probS_og = torch.zeros((args.num_steps, args.num_envs)).to(device)
@@ -168,7 +177,7 @@ class IntrinsicAgent(nn.Module):
         dones = torch.zeros((args.num_steps, args.num_envs)).to(device)
         int_values = torch.zeros((args.num_steps, args.num_envs)).to(device)
         ex_values = torch.zeros((args.num_steps, args.num_envs)).to(device)
-        previous_intrinsic_rewards = torch.zeros(args.num_envs)  # (num envs,)
+        previous_intrinsic_rewards = torch.zeros(args.num_envs).to(device)  # (num envs,)
 
         next_done = torch.zeros(args.num_envs).cpu().numpy()
         self.eval()
@@ -176,13 +185,12 @@ class IntrinsicAgent(nn.Module):
             with torch.no_grad():
                 # get action
                 actions_arg, action_log_prob, entropy, rnd_intrinsic_reward, int_v, ubc_values, log_prob_og = self.get_action(
-                    next_obs)
-
+                    next_obs, global_step)
             logprobs[step] = action_log_prob
             log_probS_og[step] = log_prob_og
-            obs[step] = next_obs  # .to(device)
+            obs[step] = next_obs.to("cpu") # .to(device)
             dones[step] = torch.from_numpy(next_done).to(device)
-            actions[step] = actions_arg.to(device)
+            actions[step] = actions_arg.to("cpu")
             int_values[step] = int_v.flatten()
             with torch.no_grad():
                 ex_values[step] = self.extrinsic_critic(next_obs.unsqueeze(1)).detach().flatten()
@@ -194,7 +202,6 @@ class IntrinsicAgent(nn.Module):
                 novelD_reward = novelD_reward - args.novelD_alpha * previous_intrinsic_rewards
                 novelD_reward[
                     novelD_reward < args.clip_intrinsic_reward_min] = 0  # clip small rewards to 0, to avoid cumulative small rewards
-
                 # total curiosity rewards
                 curiosity_rewards[step - 1] = novelD_reward
             if step == args.num_steps - 1:
@@ -202,16 +209,17 @@ class IntrinsicAgent(nn.Module):
 
             # update for novelD
             previous_intrinsic_rewards = rnd_intrinsic_reward.clone()
-
             # env step() call
-            real_next_obs, rewards, next_done, infos = envs.step(actions_arg)
+            real_next_obs, rewards, next_done, infos = envs.step(actions_arg.detach().cpu().numpy()) #TODO 为什么这一步改了encoder？
+            # for name, param in self.rnd_buffer.b_encoder.encoder.named_parameters():
+            #     print(name, param.data.mean(), "  ", param.data[:1])
+            # raise NotImplementedError("LLL")
+
             if args.render_human:
                 envs.render("human")
-
             real_next_obs = obvs_preprocess(real_next_obs, device=device)  # ,obs_stats=self.obs_stats)
 
             extrinsic_rewards[step] = torch.from_numpy(rewards).to(device)
-
             update_info_buffer(ep_info_buffer, ep_success_buffer, infos, next_done)
             next_obs = real_next_obs
 
@@ -222,7 +230,7 @@ class IntrinsicAgent(nn.Module):
                 b_actual_r = curiosity_rewards[step - args.rnd_train_freq + 1:step + 1].reshape(-1)
                 b_size = b_obs_r.shape[0]
                 b_inds_r = np.arange(b_size)
-                for epoch in range(0,args.rnd_update_epochs):
+                for epoch in range(0, args.rnd_update_epochs):
                     np.random.shuffle(b_inds_r)
                     for start in range(0, b_size, args.minibatch_size):
                         end = start + args.minibatch_size
@@ -272,7 +280,7 @@ class IntrinsicAgent(nn.Module):
 
         # bootstrap value if not done
         # TODO -- 注意！ 这里和 RND 一样没有考虑 dones，没有 episode
-        _, _, _, _, next_value_int, _, _ = self.get_action(last_obs)
+        _, _, _, _, next_value_int, _, _ = self.get_action(last_obs, math.inf)
         next_value_int = next_value_int.reshape(1, -1)
         int_advantages = torch.zeros_like(curiosity_rewards, device=device)
         int_lastgaelam = 0
@@ -300,17 +308,15 @@ class IntrinsicAgent(nn.Module):
             int_delta = curiosity_rewards[t] + args.int_gamma * int_nextvalues * nextnonterminal - \
                         int_values[t]
             int_advantages[
-                t] = int_lastgaelam = (
-                                              int_delta + args.int_gamma * args.gae_lambda * nextnonterminal * int_lastgaelam) * importance
+                t] = int_lastgaelam = (int_delta + args.int_gamma * args.gae_lambda * nextnonterminal * int_lastgaelam) * importance
 
             ext_delta = ex_rewards[t] + args.gamma * ex_nextvalues * ex_nextnonterminal - ex_values[t]
-            ex_advantages[t] = ex_lastgaelam = (
-                                                       ext_delta + args.gamma * args.gae_lambda * ex_nextnonterminal * ex_lastgaelam) * importance
+            ex_advantages[t] = ex_lastgaelam = (ext_delta + args.gamma * args.gae_lambda * ex_nextnonterminal * ex_lastgaelam) * importance
 
         int_returns = int_advantages + int_values
 
         ex_returns = ex_advantages + ex_values
-        advantages = 0.5 * ex_advantages + 1 * int_advantages  # TODO
+        advantages = 0.5 * ex_advantages + 0.5 * int_advantages  # TODO
 
         mean_i_rewards = curiosity_rewards.mean()
         max_i_rewards = curiosity_rewards.max()
