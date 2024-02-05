@@ -37,6 +37,7 @@ class TorchRunningMeanStd:
     @torch.no_grad()
     def update(self, x):
         x = x.to(self.device)
+        # assert len(x.shape) == len(self.mean.shape) + 1, "TorchRunningMeanStd update"
         batch_mean = torch.mean(x, dim=0)
         batch_var = torch.var(x, dim=0)
 

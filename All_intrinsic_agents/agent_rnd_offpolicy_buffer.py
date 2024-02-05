@@ -106,8 +106,10 @@ class IntrinsicAgent(nn.Module):
         ubc_values = self.pseudo_ucb_nets(obs_)  # (env,action_nums)
         if global_step < 6000:  # TODO 确定具体数值
             self.ubc_statistics.update(ubc_values)
+            # print("self.ubc_statistics.mean ",self.ubc_statistics.mean)
         ubc_values = self.ubc_statistics.normalize_by_var(ubc_values)
         ubc_values_ = torch.sqrt(ubc_values)  # sqrt() similar to UCB
+        print("ubc_values_",ubc_values_)
         intrinsic_reward_ = ubc_values_.mean(dim=-1)  # (env,)
         msk = intrinsic_reward_ > self.use_only_UBC_exploration_threshold  # (envs,) the envs that only use Ucb as the policy
         policy_og, critic = self.policy_net(obs_.unsqueeze(1))  # (env,action_nums),  (env,)
@@ -316,7 +318,7 @@ class IntrinsicAgent(nn.Module):
         int_returns = int_advantages + int_values
 
         ex_returns = ex_advantages + ex_values
-        advantages = 0.5 * ex_advantages + 0.5 * int_advantages  # TODO
+        advantages = 2.0 * ex_advantages + 1.0 * int_advantages  # TODO same as RND
 
         mean_i_rewards = curiosity_rewards.mean()
         max_i_rewards = curiosity_rewards.max()

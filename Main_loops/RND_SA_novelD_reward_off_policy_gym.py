@@ -169,7 +169,7 @@ def parse_args():
                         help=" ")
     parser.add_argument("--encoder_learning_rate", type=float, default=0.001,
                         help=" ")
-    parser.add_argument("--initial_encoder_train_epoches", type=int, default=10000,
+    parser.add_argument("--initial_encoder_train_epoches", type=int, default=10,
                         help=" ")
     parser.add_argument("--train_with_buffer_interval", type=int, default=3,
                         help=" ")
